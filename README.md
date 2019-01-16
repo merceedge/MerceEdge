@@ -60,7 +60,7 @@ MerceEdge是一个边缘异构协议组件连接服务，可以运行在PC、Ras
 
 * 图示
   
-* 开源协议（MIT）
+* 开源协议（Apache License 2.0）
 
 #MerceEdge#
 
