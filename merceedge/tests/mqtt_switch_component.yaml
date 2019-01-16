@@ -1,0 +1,13 @@
+version: '1'
+component:
+  name: mqtt_switch
+  vendor: Merce project group
+  inputs:
+    - name: toggle_input
+      protocol:
+          name: mqtt
+          topic: /mercedge/toggle_switch
+          qos: 0
+          retain: false
+      datatype: boolean
+      description: mqtt toggle switch input

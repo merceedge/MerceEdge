@@ -1,0 +1,9 @@
+pytz
+pyyaml
+paho-mqtt
+Flask
+flask-restful
+flask-sqlalchemy
+
+#test
+pytest

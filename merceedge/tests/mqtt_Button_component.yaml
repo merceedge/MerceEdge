@@ -1,0 +1,13 @@
+version: '1'
+component:
+  name: mqtt_button
+  vendor: Merce project group
+  outputs: 
+    - name: toggle_output
+      protocol: 
+          name: mqtt
+          topic: /mercedge/toggle_button
+          qos: 0
+          retain: false
+      datatype: boolean
+      description: mqtt demo toggle button

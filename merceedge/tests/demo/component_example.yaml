@@ -1,0 +1,18 @@
+version: '1'
+component:
+  name: test
+  vendor: Merce project group
+  inputs:
+    - name: input1
+      protocol: mqtt
+      datatype: boolean
+      description: input 1
+    - name: input2
+      protocol: 2.4G
+      datatype: string
+      description: input 2
+  outputs: 
+    - name: output1
+      protocol: BLE
+      datatype: string
+      description: output 1
