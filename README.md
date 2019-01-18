@@ -3,10 +3,10 @@
 [English（TODO）](http://google.com)
 
 
-MerceEdge是一个边缘异构协议组件连接服务，可以运行在PC、RaspberryPi上以及服务器上，可以应用在多种场合，比如：Smarthome，SmartFactroy等，目前计划支持的协议包括：mqtt、2.4GHz、BLE、REST API
+MerceEdge是一个边缘异构协议组件连接服务，可以运行在PC、RaspberryPi上以及服务器上，可以应用在多种场合，比如：Smarthome，SmartFactroy等，目前计划支持的协议包括：mqtt、2.4GHz、BLE、REST API
 
 * Edge可以：
-    * 在云计算边缘连接组合异构协议的IOT组件；
+    * 在云计算边缘连接组合异构协议的IOT组件；
     * 连接可以加入边缘计算模块，比如：数据过滤、数据分析、AI算法
 
 * 什么是边缘异构协议组件连接服务 (TODO）
@@ -35,7 +35,7 @@ MerceEdge是一个边缘异构协议组件连接服务，可以运行在PC、Ras
 * Demo 
   * 准备的硬件、软件、操作步骤等，链接app例子项目
   * 举一个使用不同协议button和light的连接例子
-  * 过滤接口数据的例子
+  * 过滤接口数据的例子
   * 边缘计算的例子
 
 
@@ -60,7 +60,7 @@ MerceEdge是一个边缘异构协议组件连接服务，可以运行在PC、Ras
 
 * 图示
   
-* 开源协议（MIT）
+* 开源协议（Apache License 2.0）
 
 #MerceEdge#
 
