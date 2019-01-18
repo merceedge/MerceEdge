@@ -1,0 +1,20 @@
+version: '1'
+formula: test_formula
+author: Merce Group
+info: This is a test formula.
+wires:
+  - output_slot: 
+      component: petstore_component
+      # authorizations: 
+      ouput: 
+          name: findPetsByTags
+          parameters:
+            - name: "tags"
+              value: "blackcat"
+    input_sink: 
+      component: mqtt_switch
+      input: toggle_input
+    # wireload: blackcat_filter_wireload
+  
+
+

@@ -1,0 +1,12 @@
+version: '1'
+component:
+  name: petstore_component
+  vendor: Merce project group
+  outputs:
+    - name: findPetsByTags
+      protocol: 
+        name: swagger2.0
+        swagger_ref: petstore_api.yaml
+        operationId: "findPetsByTags"
+
+  description: swagger 2.0 standard REST API component.

@@ -1,12 +1,21 @@
 
 class ServiceProvider(object):
     def __init__(self, edge, config):
-        pass
+        """
+        edge: MerceEdge instance
+        config: user config
+        """
+        self.edge = edge
+        self.config = config
     
     def setup(self, edge, config):
         raise NotImplementedError
+    
+    def new_instance_setup(self, interface_config, is_settimer=False):
+        # default do nothing
+        pass
 
-    def conn_output_sink(self):
+    def conn_output_sink(self, output, callback):
         # TODO mqtt client subscribe topic
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
         raise NotImplementedError

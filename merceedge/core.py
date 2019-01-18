@@ -239,6 +239,7 @@ class Output(Interface):
     def _init_provider(self):
         try:
             self.provider = PROVIDERS.get(self.protocol, None)
+            self.provider.new_instance_setup(self.name, self.attrs, True)
         except KeyError as e:
             # TODO log no such provider key error
             raise
@@ -292,6 +293,7 @@ class Input(Interface):
         # TODO emit data to EventBus and invoke configuration service send data function.
         # TODO payload根据wire类型进行转换
         self.provider.emit_input_slot(self, payload)
+
 
 class State(object):
     """Component State"""
@@ -383,7 +385,7 @@ class Event(object):
 
 class WireLoad(Entity):
     """Wire load abstract class. Mounted on wire, processing data through wire.
-        Filter, Analiysis, process, etc.
+        Filter, Analiysis, Process, etc.
     """
 
     def __init__(self, name, input_data):
