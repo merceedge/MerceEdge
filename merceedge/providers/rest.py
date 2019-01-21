@@ -22,10 +22,21 @@ from merceedge.providers.base import ServiceProvider
 from merceedge.const import (
     EVENT_TIME_CHANGED,
 )
+from merceedge.service import (
+    Service,
+    ServiceCall
+)
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+ATTR_URL = 'url'
+ATTR_PAYLOAD = 'payload'
+ATTR_HEADERS = 'headers'
+ATTR_ACTION = 'action'
+ATTR_ACTION = 'files'
+
 
 class RestApiProvider(ServiceProvider):
     DOMAIN = 'rest'
@@ -45,9 +56,19 @@ class RestApiProvider(ServiceProvider):
         # setup request service
         self.edge.services.register(self.DOMAIN, self.SERVICE_REST_REQUEST, self._request_service)
     
-    def _request_service(self):
-        pass
-
+    def _request_service(self, call: ServiceCall):
+        """Handle REST API request service calls"""
+        url = call.data.get(ATTR_URL)
+        body = call.data.get(ATTR_PAYLOAD)
+        headers = call.data.get(ATTR_HEADERS)
+        action = call.data.get(ATTR_ACTION)
+        # request
+        api_client = requests
+        response = get_method_from_action(api_client, action)(url, 
+                                                              headers=dict(headers),
+                                                              data=body)
+        logger.info(u"request service response: {} {}".format(response.status_code, response.text))
+        
     def _new_requester_setup(self, output, response_handler):
         """ Read input or output interface config(swagger 2.0 standard compliant).
             create rest api requester instance. if is_settimer is True, register periodic api requester
@@ -123,7 +144,14 @@ class RestApiProvider(ServiceProvider):
         """
         request_action, url, body, headers, files = self._get_request_args(input)
         logger.info(u'requester {0} {1}'.format(request_action.upper(), url))
-        # 
+        # Call rest request service
+        data = {ATTR_ACTION: request_action,
+                ATTR_URL: url,
+                ATTR_PAYLOAD: payload,
+                ATTR_HEADERS: headers}
+        self.edge.services.call(self.DOMAIN, self.SERVICE_REST_REQUEST, data)
+        
+
 
 
         
