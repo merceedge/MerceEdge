@@ -290,7 +290,7 @@ class Input(Interface):
             raise
     
     def emit_data_to_input(self, payload):
-        # TODO emit data to EventBus and invoke configuration service send data function.
+        # Emit data to EventBus and invoke configuration service send data function.
         # TODO payload根据wire类型进行转换
         self.provider.emit_input_slot(self, payload)
 

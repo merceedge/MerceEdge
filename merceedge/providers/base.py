@@ -24,7 +24,7 @@ class ServiceProvider(object):
         """connect input interface on wire input slot """
         raise NotImplementedError
 
-    def emit_input_slot(self, data):
+    def emit_input_slot(self, input, payload):
         """send data to input slot"""
         raise NotImplementedError
 
