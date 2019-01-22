@@ -69,12 +69,12 @@ class RestApiProvider(ServiceProvider):
                                                               data=body)
         logger.info(u"request service response: {} {}".format(response.status_code, response.text))
         
-    def _new_requester_setup(self, output, response_handler):
+    def _new_requester_setup(self, output, output_wire_params, response_handler):
         """ Read input or output interface config(swagger 2.0 standard compliant).
             create rest api requester instance. if is_settimer is True, register periodic api requester
             in EventBus.
         """
-        request_action, url, body, headers, files = self._get_request_args(output)
+        request_action, url, body, headers, files = self._get_request_attrs(output)
         logger.info(u'regisiter requester {0} {1}'.format(request_action.upper(), url))
 
         self._requesters[output.get_attrs('operationId')] = \
@@ -112,9 +112,9 @@ class RestApiProvider(ServiceProvider):
         # TODO
         raise NotImplementedError
     
-    def conn_output_sink(self, output, callback):       
+    def conn_output_sink(self, output, output_wire_params, callback):       
         # api response or webhook -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
-        self._new_requester_setup(output.name, output.attrs, callback)
+        self._new_requester_setup(output, output_wire_params, callback)
         
 
     def conn_input_slot(self):
@@ -122,7 +122,7 @@ class RestApiProvider(ServiceProvider):
         # TODO
         raise NotImplementedError
     
-    def _get_request_args(self, name, interface):
+    def _get_request_attrs(self, interface, interface_params={}):
         """Read input or output interface config(swagger 2.0 standard compliant).
         """
         swagger_filename = interface.get_attrs('swagger_ref')
@@ -135,30 +135,21 @@ class RestApiProvider(ServiceProvider):
         operations.update(swagger_parser.generated_operation)
         request_path, request_action = operations.get(interface.get_attrs('operationId'))
         
-        request_args = get_request_args(request_path, request_action, swagger_parser)
-        url, body, headers, files = get_url_body_from_request(request_path, request_path, request_args, swagger_parser)
+        # request_args = get_request_args(request_path, request_action, swagger_parser)
+        request_args = interface_params
+        url, body, headers, files = get_url_body_from_request(request_action, request_path, request_args, swagger_parser)
         return request_action, url, body, headers, files
 
     def emit_input_slot(self, input, payload):
         """send data to input slot, for rest api, invoide corotutine request.
         """
-        request_action, url, body, headers, files = self._get_request_args(input)
+ 
+        request_action, url, body, headers, files = self._get_request_attrs(input, payload)
+     
         logger.info(u'requester {0} {1}'.format(request_action.upper(), url))
         # Call rest request service
         data = {ATTR_ACTION: request_action,
                 ATTR_URL: url,
-                ATTR_PAYLOAD: payload,
+                ATTR_PAYLOAD: body,
                 ATTR_HEADERS: headers}
         self.edge.services.call(self.DOMAIN, self.SERVICE_REST_REQUEST, data)
-        
-
-
-
-        
-        
-    
-
-    
-
-
-    

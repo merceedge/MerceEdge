@@ -38,13 +38,15 @@ _LOGGER = logging.getLogger(__name__)
 
 class MerceEdge(object):
     """Root object of Merce Edge node"""
-    def __init__(self):
+    def __init__(self, user_config):
+        self.user_config = user_config
         self.component_templates = {} # key: component template name
         self.components = {}  # key: component id
         self.wires = {} # key: wire id
         self.pool = pool = util.create_worker_pool()
         self.bus = EventBus(pool)
         self.services = ServiceRegistry(self.bus, pool)
+        self.wireload_factory = WireLoadFactory(user_config)
         # self.states = StateMachine(self.bus)
         # self.config = Config()
         self._lock = threading.Lock()
@@ -61,13 +63,13 @@ class MerceEdge(object):
         # TODO 
         pass
 
-    def load_local_component_templates(self, config_path):
-        """Read local config file, generate component templates
+    def load_local_component_templates(self, component_template_path):
+        """Read local component templates path, generate component template objects
         """
         template_configs = []
-        template_configs += [each for each in os.listdir(config_path) if each.endswith('.yaml')]
+        template_configs += [each for each in os.listdir(component_template_path) if each.endswith('.yaml')]
         for template_config in template_configs:
-            com_tmp_yaml = yaml_util.load_yaml(join(config_path, template_config))
+            com_tmp_yaml = yaml_util.load_yaml(join(component_template_path, template_config))
             # new_com_tmp = Component(com_tmp_yaml)
             self.component_templates[com_tmp_yaml['component']['name']] = com_tmp_yaml
             
@@ -89,7 +91,7 @@ class MerceEdge(object):
     def connect_interface(self, output_component_id, output_name, input_component_id, input_name, wire_id=None):
         """ connenct wire
         """
-        wire = Wire(self.components[output_component_id].outputs[output_name], 
+        wire = Wire(self, self.components[output_component_id].outputs[output_name], 
                 self.components[input_component_id].inputs[input_name], wire_id)
         self.wires[wire.id] = wire
         with self._lock:
@@ -150,6 +152,10 @@ class Entity(object):
             return self.attrs.get(attr_key)
         except KeyError as e:
             _LOGGER.error(str(e))
+            return None
+    
+    def set_attrs(self, _attrs):
+        self.attrs.update(_attrs)
 
 
 class Component(Entity):
@@ -244,9 +250,9 @@ class Output(Interface):
             # TODO log no such provider key error
             raise
     
-    def conn_output_sink(self):
+    def conn_output_sink(self, output_wire_params={}):
         """ register EventBus listener"""
-        self.provider.conn_output_sink(self, self._output_sink_callback)
+        self.provider.conn_output_sink(self, output_wire_params, self._output_sink_callback)
     
     def _output_sink_callback(self, payload):
         """Emit data to all wires
@@ -304,17 +310,24 @@ class State(object):
 
 class Wire(Entity):
     """Wire """
-    def __init__(self, output_sink, input_slot, id=None):
+    def __init__(self, edge, output_sink, input_slot, wireload_name=None, id=None):
+        self.edge = edge
         self.id = id or id_util.generte_unique_id()
         self.input = output_sink
         self.output = input_slot
         self.input.add_wire(self)
         self.output.add_wire(self)
+        
+        self.input_params = dict()
+        self.output_params = dict()
 
-        # TODO condition if ... elif ... else ... 
-        # TODO filter/AI/custom module, etc...
+        # eg: condition if ... elif ... else ... 
+        # filter/AI/custom module, etc...
         self.wire_load = None
-    
+        if wireload_name:
+            self.wire_load = self._create_wireload_object(wireload_name)
+        self.edge.bus.listen("wire_ouput_{}".format(self.id), self.wire_output_handler)
+        
     def __repr__(self):
         wire_info = {}
         wire_info["input"] = {"component_id": self.input.component.id, 
@@ -322,7 +335,17 @@ class Wire(Entity):
         wire_info["output"] = {"component_id": self.output.component.id,
                             "name": self.output.name}
         return wire_info    
-        
+    
+    def _create_wireload_object(self, wireload_name):
+        wireload_class = self.edge.wireload_factory.get_class(wireload_name)
+        if wireload_class:
+            self.wire_load = wireload_class()
+
+    def set_input_params(self, parameters):
+        self.input_params = parameters
+
+    def set_output_params(self, parameters):
+        self.output_params = parameters
     
     # @property
     # def input(self):
@@ -338,8 +361,15 @@ class Wire(Entity):
             
     def fire(self, payload):
         """Fire payload data from input to output"""
-        # TODO data根据
-        self.output.emit_data_to_input(payload.data)
+        #  send event to eventbus with wire_output_{wireid} event
+        self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
+    
+    def wire_output_handler(self, payload):
+        data = payload.data
+        if self.wire_load:
+            data = self.wire_load.process(payload.data)
+        self.output.emit_data_to_input(data)
+        
 
 
 class Event(object):
@@ -381,22 +411,33 @@ class Event(object):
                 self.time_fired == other.time_fired)
 
 
+class WireLoadFactory:
+    def __init__(self, config):
+        """
+        config: user configuration
+        """
+        self._classes = {}
+
+    def _load(self, path):
+        """Walk throuth path and load WireLoad subclass
+        """
+        # TODO
+        pass
+        
+    def get_class(self, wireload_name):
+        return self._classes.get(wireload_name, None)
 
 
 class WireLoad(Entity):
     """Wire load abstract class. Mounted on wire, processing data through wire.
         Filter, Analiysis, Process, etc.
     """
-
-    def __init__(self, name, input_data):
-        self.name = name
-        self.input_data = input_data
+    name = ''
+    def __init__(self, init_params={}):
+        self.init_params = init_params
         self.ouput_data = None
     
-    def update_input(self, input_data):
-        self.input_data = input_data
-    
-    def process(self):
+    def process(self, input_data):
         raise NotImplementedError
 
     @property

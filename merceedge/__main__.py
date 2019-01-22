@@ -71,12 +71,13 @@ def main():
     """
 
     # 0. Load local yaml component templates
-    edge = MerceEdge()
+    user_config = yaml_util.load_yaml('./merceedge/config.yaml')
+    edge = MerceEdge(user_config=user_config)
     edge.load_local_component_templates('./merceedge/tests/')
     print(edge.component_templates)
     
     # 1. setup services
-    user_config = yaml_util.load_yaml('./merceedge/config.yaml')
+    
     # TODO need walk throught service provider path and load all services
     PROVIDERS['mqtt'].setup(edge, user_config)
     # for name, provider in PROVIDERS:

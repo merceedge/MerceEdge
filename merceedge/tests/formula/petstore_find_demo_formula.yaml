@@ -5,16 +5,20 @@ info: This is a test formula.
 wires:
   - output_slot: 
       component: petstore_component
-      # authorizations: 
+      # authorizations: TODO
       ouput: 
-          name: findPetsByTags
-          parameters:
-            - name: "tags"
-              value: "blackcat"
+        name: findPetsByTags
+        parameters:
+          - name: "tags"
+            value: "blackcat"
     input_sink: 
       component: mqtt_switch
-      input: toggle_input
-    # wireload: blackcat_filter_wireload
+      input: 
+        name: toggle_input
+    wireload: 
+      name: filter_wireload
+      # parameters: TODO
+        
   
 
 

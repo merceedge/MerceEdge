@@ -10,3 +10,6 @@ mqtt:
 
 OpenApI:
   swagger_path: "./merceedge/tests/swagger"
+
+wireload:
+  path: "./merceedge/tests/wireload"
