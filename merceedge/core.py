@@ -3,6 +3,7 @@ import logging
 import threading
 import enum
 import os
+import sys
 import copy
 import json
 from os.path import join
@@ -11,6 +12,7 @@ import merceedge.util as util
 import merceedge.util.dt as dt_util
 import merceedge.util.id as id_util
 import merceedge.util.yaml as yaml_util
+import merceedge.util.module as module_util
 from merceedge.exceptions import MerceEdgeError
 from merceedge.const import (
     MATCH_ALL,
@@ -20,7 +22,7 @@ from merceedge.const import (
     EVENT_STATE_CHANGED
 )
 from merceedge.service import ServiceRegistry
-from merceedge.providers import PROVIDERS
+from merceedge.providers import ServiceProviderFactory
 from merceedge.api_server.models import ComponentDBModel, WireDBModel
 
 DOMAIN = "merceedge"
@@ -47,6 +49,7 @@ class MerceEdge(object):
         self.bus = EventBus(pool)
         self.services = ServiceRegistry(self.bus, pool)
         self.wireload_factory = WireLoadFactory(user_config)
+        # ServiceProviderFactory.init(user_config['provider_path'])
         # self.states = StateMachine(self.bus)
         # self.config = Config()
         self._lock = threading.Lock()
@@ -88,11 +91,14 @@ class MerceEdge(object):
                 pass
             return None
 
-    def connect_interface(self, output_component_id, output_name, input_component_id, input_name, wire_id=None):
+    def connect_interface(self, output_component_id, output_name, input_component_id, input_name, wire_id=None, wireload_name=None):
         """ connenct wire
         """
-        wire = Wire(self, self.components[output_component_id].outputs[output_name], 
-                self.components[input_component_id].inputs[input_name], wire_id)
+        wire = Wire(edge=self, 
+                    output_sink=self.components[output_component_id].outputs[output_name], 
+                    input_slot=self.components[input_component_id].inputs[input_name], 
+                    wireload_name=wireload_name,
+                    id=wire_id)
         self.wires[wire.id] = wire
         with self._lock:
             self.components[output_component_id].outputs[output_name].conn_output_sink()
@@ -136,8 +142,33 @@ class MerceEdge(object):
             except KeyError:
                 # TODO logger warn
                 continue
+    
+    def load_formula(self, formula_path):
+        formula_yaml = yaml_util.load_yaml(formula_path)
+        wires = formula_yaml['wires']
+        try:
+            for wire in wires:
+                # struct components
+                output_com = self.generate_component_instance(wire['output_slot']['component'])
+                input_com = self.generate_component_instance(wire['input_sink']['component'])
+                # struct wire
+                output_name = wire['output_slot']['output']['name']
+                input_name = wire['input_sink']['input']['name']
 
-        
+                # wireload is optional
+                wireload_name = None
+                wireload = wire.get('wireload', None)
+                if wireload:
+                    wireload_name = wireload['name']
+
+                self.connect_interface(output_com.id, output_name,
+                                        input_com.id, input_name,
+                                        wireload_name=wireload_name)
+        except KeyError:
+            _LOGGER.error("Load formula error, program exit!")
+            sys.exit(-1)
+            
+
 class Entity(object):
     """ABC for Merce Edge entity(Component, Interface, etc.)"""
     id = id_util.generte_unique_id()
@@ -244,15 +275,18 @@ class Output(Interface):
     
     def _init_provider(self):
         try:
-            self.provider = PROVIDERS.get(self.protocol, None)
-            self.provider.new_instance_setup(self.name, self.attrs, True)
+            self.provider = ServiceProviderFactory.get_provider(self.protocol)
+            # if self.provider:
+            #     self.provider.new_instance_setup(self.name, self.attrs, True)
         except KeyError as e:
             # TODO log no such provider key error
             raise
     
     def conn_output_sink(self, output_wire_params={}):
         """ register EventBus listener"""
-        self.provider.conn_output_sink(self, output_wire_params, self._output_sink_callback)
+        self.provider.conn_output_sink(output=self, 
+                                       output_wire_params=output_wire_params,
+                                       callback=self._output_sink_callback)
     
     def _output_sink_callback(self, payload):
         """Emit data to all wires
@@ -290,7 +324,7 @@ class Input(Interface):
         
     def _conn_input_slot(self):
         try:
-            self.provider = PROVIDERS.get(self.protocol, None)
+            self.provider = ServiceProviderFactory.get_provider(self.protocol)
         except KeyError as e:
             # TODO log no such provider key error
             raise
@@ -325,7 +359,7 @@ class Wire(Entity):
         # filter/AI/custom module, etc...
         self.wire_load = None
         if wireload_name:
-            self.wire_load = self._create_wireload_object(wireload_name)
+            self._create_wireload_object(wireload_name)
         self.edge.bus.listen("wire_ouput_{}".format(self.id), self.wire_output_handler)
         
     def __repr__(self):
@@ -417,12 +451,12 @@ class WireLoadFactory:
         config: user configuration
         """
         self._classes = {}
+        self._load(config['wireload']['path'])
 
     def _load(self, path):
         """Walk throuth path and load WireLoad subclass
         """
-        # TODO
-        pass
+        self._classes = module_util.load_modules(path, WireLoad)
         
     def get_class(self, wireload_name):
         return self._classes.get(wireload_name, None)

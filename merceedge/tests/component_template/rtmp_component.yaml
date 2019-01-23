@@ -1,0 +1,12 @@
+version: '1'
+component:
+  name: rtmp_component
+  vendor: Merce project group
+  outputs:
+    - name: rtmp_video_stream
+      protocol: 
+        name: rtmp
+        rtmp_url: "rtmp://xxxxx.xx"
+        code: h.264
+
+  description: RTMP video stream component.

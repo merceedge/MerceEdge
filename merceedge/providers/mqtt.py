@@ -41,15 +41,17 @@ ATTR_RETAIN = 'retain'
 
 MAX_RECONNECT_WAIT = 300  # seconds
 
-class MqttServiceProvider(Singleton):
+class MqttServiceProvider(ServiceProvider):
     # __metaclass__ = Singleton
     DOMAIN = 'mqtt'
+    name=DOMAIN
     SERVICE_PUBLISH = 'publish'
     MQTT_MSG_RCV_EVENT = 'mqtt_msg_rcv'
     
-    def __init__(self):
+    def __init__(self, edge, config):
         # TODO broker_ip broker_port username password etc.
-        pass
+        super(MqttServiceProvider, self).__init__(edge, config)
+        
 
     def setup(self, edge , config):
         self.edge = edge
@@ -141,7 +143,7 @@ class MqttServiceProvider(Singleton):
         # TODO need fix this proto code
         self.edge.bus.fire(self.MQTT_MSG_RCV_EVENT, msg.payload.decode('utf-8'))
 
-    def conn_output_sink(self, output , callback):
+    def conn_output_sink(self, output, output_wire_params, callback):
         # TODO mqtt client subscribe topic (need fix this proto code)
         self._mqttc.subscribe(output.get_attrs('topic'), 0)
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  

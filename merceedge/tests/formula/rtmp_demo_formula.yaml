@@ -1,0 +1,23 @@
+version: '1'
+formula: rtmp_demo_formula
+author: Merce Group
+info: This is a rtmp demo formula.
+wires:
+  - output_slot: 
+      component: rtmp_component
+      output: 
+        name: rtmp_video_stream
+        parameters:
+          - name: rtmp_url
+            value: "rtmp://xxxxx.xx"
+    input_sink: 
+      component: mqtt_switch
+      input: 
+        name: toggle_input
+    wireload: 
+      name: pose_wireload
+      # parameters: TODO
+        
+  
+
+

@@ -2,6 +2,7 @@ import sys
 from multiprocessing import Process
 import threading
 import signal
+import argparse
 
 from merceedge.core import (
     MerceEdge,
@@ -10,7 +11,7 @@ from merceedge.core import (
     Input,
     Output
 )
-from merceedge.providers import PROVIDERS
+from merceedge.providers import ServiceProviderFactory
 from merceedge.util import yaml as yaml_util
 from merceedge.api_server import app as api_server
 
@@ -69,26 +70,37 @@ def main():
        3.3 Wire APIs 
     4. translate data
     """
+    # TODO parse args
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--formula', dest='formula', help='formula yml')
+    args = parser.parse_args()
+
 
     # 0. Load local yaml component templates
     user_config = yaml_util.load_yaml('./merceedge/config.yaml')
     edge = MerceEdge(user_config=user_config)
-    edge.load_local_component_templates('./merceedge/tests/')
+    edge.load_local_component_templates('./merceedge/tests/component_template')
     print(edge.component_templates)
     
     # 1. setup services
     
-    # TODO need walk throught service provider path and load all services
-    PROVIDERS['mqtt'].setup(edge, user_config)
-    # for name, provider in PROVIDERS:
-    #     provider.setup(edge, user_config)
+    # Walk throught service provider path and load all services
+    ServiceProviderFactory.init(user_config['provider_path'], edge, user_config)
+    for name, provider in ServiceProviderFactory.providers.items():
+        provider.setup(edge, user_config)
     
     # 2. Read database and restore components / wires
     # edge.restore_entities_from_db()
 
     # 3. setup api server
     api_server.setup(edge)
+
     
+    # TODO load formula
+    if args.formula:
+        formula_path = args.formula[1:]
+        edge.load_formula(formula_path)
+
     # 4. run ...
     keep_running = True
     while keep_running:

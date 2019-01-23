@@ -40,6 +40,7 @@ ATTR_ACTION = 'files'
 
 class RestApiProvider(ServiceProvider):
     DOMAIN = 'rest'
+    name=DOMAIN
     SERVICE_REST_REQUEST = 'rest_request'
     def __init__(self, edge, config):
         """

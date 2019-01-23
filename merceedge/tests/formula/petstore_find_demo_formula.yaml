@@ -1,5 +1,5 @@
 version: '1'
-formula: test_formula
+formula: petstore_rest_api_demo_formula
 author: Merce Group
 info: This is a test formula.
 wires:

@@ -1,0 +1,51 @@
+from threading import Thread
+import cv2
+
+from merceedge.providers.base import ServiceProvider
+
+class RTMPProvider(ServiceProvider):
+    """ Receive video stream from rtmp url and convert to video frame data.
+    """
+    DOMAIN = "rtmp"
+    name=DOMAIN
+    RTMP_FRAME_EVENT = 'rtmp_frame'
+
+    def __init__(self, edge, config):
+        super(RTMPProvider, self).__init__(edge, config)
+
+    def setup(self, edge, config):
+
+        pass
+
+    def _rtmp_pull_stream(self, rtmp_id, rtmp_url, params):
+        """
+            TODO user params
+        """
+        stream = cv2.VideoCapture(rtmp_url)
+        while True:
+            grabbed, frame = stream.read()
+            # if the frame was not grabbed, then we have reached the end
+            # of the stream
+            if not grabbed:
+                break
+            # send frame event on eventbus
+            self.edge.bus.fire("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
+                                frame)
+            
+
+    def _new_rtmp_client(self, rtmp_id, rtmp_url, params, callback):
+        # Setup a thread, read rtmp urls   
+        t = Thread(target=self._rtmp_pull_stream, args=(rtmp_id, rtmp_url, params,))
+
+        # listen this rtmp client frame event on event bus
+        self.edge.bus.listen("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
+                             callback)
+        t.start()
+        
+
+        
+    def conn_output_sink(self, output, output_wire_params, callback):       
+        # api response or webhook -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
+        rtmp_id = output.id
+        rtmp_url = output.get_attrs('rtmp_url')
+        self._new_rtmp_client(rtmp_id, rtmp_url, output_wire_params, callback)

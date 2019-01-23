@@ -4,12 +4,16 @@ paho-mqtt
 Flask
 flask-restful
 flask-sqlalchemy
+aiohttp
 
 # swagger
 swagger-tester
 swagger-parser>=0.1.11
 connexion>=1.0.121
 requests~=2.11
+
+#rtmp
+opencv-python
 
 #test
 pytest

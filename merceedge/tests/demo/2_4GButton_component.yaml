@@ -1,9 +1,0 @@
-version: '1'
-component:
-  name: 2_4GToggleButton
-  vendor: Merce project group
-  outputs: 
-    - name: toggle
-      protocol: 2.4G
-      datatype: boolean
-      description: 2.4GHz toggle button
