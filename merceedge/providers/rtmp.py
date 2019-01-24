@@ -1,5 +1,6 @@
 from threading import Thread
 import cv2
+import numpy as np
 
 from merceedge.providers.base import ServiceProvider
 
@@ -17,7 +18,7 @@ class RTMPProvider(ServiceProvider):
 
         pass
 
-    def _rtmp_pull_stream(self, rtmp_id, rtmp_url, params):
+    def _rtmp_pull_stream(self, rtmp_id, rtmp_url, params, callback):
         """
             TODO user params
         """
@@ -29,17 +30,24 @@ class RTMPProvider(ServiceProvider):
             if not grabbed:
                 break
             # send frame event on eventbus
-            self.edge.bus.fire("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
-                                frame)
+            # TODO send shape info
+            # print(frame.shape)
+            # data = frame.tobytes()
+            # print("len: {}".format(len(data)))
+
+            # self.edge.bus.fire("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
+            #                     data)
+            callback(frame)
             
 
     def _new_rtmp_client(self, rtmp_id, rtmp_url, params, callback):
         # Setup a thread, read rtmp urls   
-        t = Thread(target=self._rtmp_pull_stream, args=(rtmp_id, rtmp_url, params,))
+        t = Thread(target=self._rtmp_pull_stream, args=(rtmp_id, rtmp_url, params, callback))
 
         # listen this rtmp client frame event on event bus
-        self.edge.bus.listen("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
-                             callback)
+        # self.edge.bus.listen("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
+        #                      callback)
+        
         t.start()
         
 

@@ -1,0 +1,3 @@
+[submodule "merceedge/tests/detect_object"]
+	path = merceedge/tests/detect_object
+	url = https://github.com/gzhu4aeroxen/object_detector_app.git

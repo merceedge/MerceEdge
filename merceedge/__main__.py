@@ -98,7 +98,7 @@ def main():
     
     # TODO load formula
     if args.formula:
-        formula_path = args.formula[1:]
+        formula_path = args.formula.strip()
         edge.load_formula(formula_path)
 
     # 4. run ...

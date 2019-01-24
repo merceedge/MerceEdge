@@ -6,6 +6,8 @@ flask-restful
 flask-sqlalchemy
 aiohttp
 
+
+
 # swagger
 swagger-tester
 swagger-parser>=0.1.11
@@ -15,5 +17,13 @@ requests~=2.11
 #rtmp
 opencv-python
 
+# demos needed
+
+# deep learning
+tensorflow>=1.10.1
+# tensorflow-gpu
+matplotlib
+
 #test
 pytest
+

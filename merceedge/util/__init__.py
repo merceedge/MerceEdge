@@ -18,7 +18,7 @@ from .dt import datetime_to_local_str, utcnow
 # Define number of MINIMUM worker threads.
 # During bootstrap of HA (see bootstrap._setup_component()) worker threads
 # will be added for each component that polls devices.
-MIN_WORKER_THREAD = 2
+MIN_WORKER_THREAD = 10
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,8 +46,8 @@ def create_worker_pool(worker_count=None):
             worker_count, pending_jobs_count)
 
         for start, job in current_jobs:
-            _LOGGER.warning("WorkerPool:Current job from %s: %s",
-                            datetime_to_local_str(start), job)
+            _LOGGER.warning("WorkerPool:Current job from {}: {}".format(
+                            datetime_to_local_str(start), job))
     
     return ThreadPool(job_handler, worker_count, busy_callback)
 

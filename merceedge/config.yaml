@@ -11,7 +11,7 @@ mqtt:
   protocol: 3.1.1
 
 OpenApI:
-  swagger_path: "./merceedge/tests/swagger"
+  swagger_path: "/Users/hobo/MyProjects/MerceProject/MerceEdge/merceedge/tests/swagger"
 
 wireload:
-  path: "./merceedge/tests/wireload"
+  path: "/Users/hobo/MyProjects/MerceProject/MerceEdge/merceedge/tests/wireload"

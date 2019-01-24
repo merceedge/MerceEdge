@@ -396,12 +396,17 @@ class Wire(Entity):
     def fire(self, payload):
         """Fire payload data from input to output"""
         #  send event to eventbus with wire_output_{wireid} event
-        self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
+        # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
+        data = payload
+        if self.wire_load:
+            data = self.wire_load.process(data)
+        if data:
+            self.output.emit_data_to_input(data)
     
     def wire_output_handler(self, payload):
         data = payload.data
         if self.wire_load:
-            data = self.wire_load.process(payload.data)
+            data = self.wire_load.process(data)
         self.output.emit_data_to_input(data)
         
 
