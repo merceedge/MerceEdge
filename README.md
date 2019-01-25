@@ -1,6 +1,6 @@
 # MerceEdge
 
-[English（TODO）](http://google.com)
+[English（TODO）](https://translate.google.cn/)
 
 
 MerceEdge是一个边缘异构协议组件连接服务，可以运行在PC、RaspberryPi上以及服务器上，可以应用在多种场合，比如：SmartHome，SmartFactroy等，目前计划支持的协议包括：mqtt、ZigBee、BLE、REST API
@@ -76,6 +76,13 @@ MerceEdge可以：
   5. 运行一个边缘计算的例子
    
     （先Ctrl + c 停止上面的edge运行）
+
+    （然后修改rtmp组件的配置文件）
+     (MerceEdge) MerceEdge # vim merceedge/tests/component_template/rtmp_component.yaml
+     (修改第9行，然后保存并退出vim)
+      rtmp_url: "rtmp://change_your_rtmp_path_here" 或者 rtmp_url: "/local_path/test_video.mp4"
+
+     (运行)
      (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
 
 打开另一个终端窗口, 同样使用前面设置好的MerceEdge virtualenv, 运行以下命令：
