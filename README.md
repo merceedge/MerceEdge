@@ -1,49 +1,49 @@
 # MerceEdge
 
-[English](https://github.com/merceedge/MerceEdge/blob/master/README_EN.md)
+[中文](https://github.com/merceedge/MerceEdge/blob/master/README_CN.md)
 
 
-MerceEdge是一个边缘异构协议组件连接服务，可以运行在PC、RaspberryPi上以及服务器上，可以应用在多种场合，比如：SmartHome，SmartFactroy等，目前计划支持的协议包括：mqtt、ZigBee、BLE、REST API
+MerceEdge is an edge heterogeneous protocol component connection service that can run on PCs, RaspberryPis, and servers. It can be used in a variety of applications, such as SmartHome, SmartFactroy, etc. Currently, the protocols currently planned include: mqtt, ZigBee, BLE, REST API.
 
-MerceEdge可以：
-* 在云计算边缘连接组合异构协议的IOT组件；
-* 连接可以加入边缘计算模块，比如：数据过滤、数据分析、AI算法
+MerceEdge can:
+* Connect the IOT components of the combined heterogeneous protocol at the edge of the cloud computing
+* Connections can be added to the edge calculation module, such as: data filtering, data analysis, AI algorithm
 
-## 什么是边缘异构协议组件连接服务
+## What is the Edge Heterogeneous Protocol Component Connection Service?
 
-“边缘”是指工作在用户本地，处于云计算的边缘（可参考wiki边缘计算概念）；“异构协议连接”是指连接不同的物联网通信协议与接口，如：REST API、mqtt、BLE、2.4GHz、Zigbee等等；
-
-
-## 我们为什么要做MerceEdge
-
-围绕在我们身边的不同协议的物联网（IOT）设备越来越多，但不同协议类型的、遗留的、不同厂家的设备经常无法兼容，我们希望能够提供一种运行在用户本地，具有快速反应的、安全的、易用的连接服务，让用户能够根据自己的需要，灵活组织不同的设备交互，完成特定的功能。
-
-## 术语表 (TODO)
-
-    * 组件（component）
-    * 接口（interface）
-    * 连线（wire）
-    * 连线负载（wire Load）
-    * 方案（formula）
+"Edge" refers to working locally on the user's edge, at the edge of cloud computing (refer to the wiki edge computing concept); "heterogeneous protocol connection" refers to connecting different IoT communication protocols and interfaces, such as: REST API, mqtt, BLE , 2.4GHz, Zigbee, etc.
 
 
-## 安装和运行
-  ### 从源代码安装和运行
-  1. git clone源代码
+## Why do we want to develop MerceEdge
+
+There are more and more Internet of Things (IOT) devices around different protocols around us, but different protocol types, legacy, and different vendors' devices are often incompatible. We hope to provide a kind of operation that is local to the user and has a quick response. The secure, easy-to-use connection service allows users to flexibly organize different device interactions and perform specific functions according to their needs.
+
+## Glossary (TODO)
+
+    * Component
+    * Interface
+    * Wire
+    * Wire Load
+    * Formula
+
+
+## Installation and run
+  ### Install and run from source code
+  1. git clone source code
 
     git clone https://github.com/merceedge/MerceEdge.git
     git submodule init
     git submodule update
 
-  2. 安装python3.6环境, 最好使用virtualenv或者pipenv, 具体情况请根据你的操作系统环境进行安装
+  2. Install python3.6 environment, it is best to use virtualenv or pipenv, please install according to your operating system environment.
 
-在本地安装一个mqtt服务端（由于MerceEdge使用了MQTT服务，所以我们需要一个MQTT服务器，在MerceEdge中也可以指定一个已有的MQTT服务，在后面的文档中会介绍。这里我们直接安装一个MQTT服务就好）。本例使用mosquitto服务,  你可以参考[这里](https://mosquitto.org/download/)来下载安装， 安装好后默认运行：
+Install a mqtt server locally (because MerceEdge uses the MQTT service, we need an MQTT server. We can also specify an existing MQTT service in MerceEdge, which will be introduced in the following document. Here we install an MQTT service directly. Just fine). This example uses the mosquitto service. You can download it by referring to [here] (https://mosquitto.org/download/). After installation, it will run by default:
 
 
     mosquitto -c /usr/local/etc/mosquitto/mosquitto.conf
 
 
-  3. 安装MerceEdge
+  3. Install MerceEdge
 
     (MerceEdge) / # cd MerceEdge
     (MerceEdge) MerceEdge # python setup.py develop
@@ -51,7 +51,7 @@ MerceEdge可以：
 
 
 
-  4. 验证一下是否安装成功
+  4. Verify that the installation was successful
    
     (MerceEdge) MerceEdge # edge
 
@@ -73,19 +73,19 @@ MerceEdge可以：
 
 
 
-  5. 运行一个边缘计算的例子
+  5. Run an example of edge calculation
    
-    （先Ctrl + c 停止上面的edge运行）
+    （First Ctrl + c stop the above edge run）
 
-    （然后修改rtmp组件的配置文件）
+    （Then modify the configuration file of the rtmp component）
      (MerceEdge) MerceEdge # vim merceedge/tests/component_template/rtmp_component.yaml
-     (修改第9行，然后保存并退出vim)
-      rtmp_url: "rtmp://change_your_rtmp_path_here" 或者 rtmp_url: "/local_path/test_video.mp4"
+     (Modify line 9, then save and exit vim)
+      rtmp_url: "rtmp://change_your_rtmp_path_here" or rtmp_url: "/local_path/test_video.mp4"
 
-     (运行)
-     (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
+     (Let's run)
+     (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
 
-打开另一个终端窗口, 同样使用前面设置好的MerceEdge virtualenv, 运行以下命令：
+Open another terminal window, and also use the MerceEdge virtualenv set up earlier, run the following command:
 
     (MerceEdge)  MerceEdge # cd merceedge/tests/demo 
     (MerceEdge)  demo # python object_detector_ui.py
@@ -93,43 +93,43 @@ MerceEdge可以：
 
 
 
-### 从docker运行(TODO)
+### Run from docker (TODO)
 
-## 例子
-  * 边缘计算的例子
+## Demo
+  * Demo of edge calculation
 
-  本例子从rtmp服务接收视频流，并使用目标识别的“连线负载”，对视频流进行目标识别分析，然后使用MQTT服务把视频分析结果发到显示终端组件上。
+  This demo receives a video stream from the rtmp service and uses the object-detection "wired load" to perform target recognition analysis on the video stream, and then uses the MQTT service to send the video analysis result to the display terminal component.
 
     (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
 
-打开另一个终端窗口, 同样使用前面设置好的MerceEdge virtualenv, 运行以下命令：
+Open another terminal window, and also use the MerceEdge virtualenv set up earlier, run the following command:
 
     (MerceEdge)  MerceEdge # cd merceedge/tests/demo 
     (MerceEdge)  demo # python object_detector_ui.py
 
-  * 使用不同协议button和light的连接例子(TODO)
-  * 过滤接口数据的例子(TODO)
+  *  Use different protocol button and light connection examples (TODO)
+  *  Example of filtering interface data (TODO)
   
 
 
-## 特性
-1. Edge设备出厂默认使用yaml对一些Merce Group认证的组件支持，用户也可以根据自己需要自己扩展组件
-2. 提供组件类型CURD操作（组件类型的 REST API）
-3. 提供根据组件类型对组件实例CURD的操作（REST API ）
-4. 提供连线的CURD操作
-5. 连接异构组件
+## Feature
+1. The Edge device defaults use yaml for some Merce Group certified components, and users can extend the components themselves according to their needs.
+2. Provide component type CURD operations (component type REST API)
+3. Provide operations on component instance CURD based on component type (REST API)
+4. Provide wired CURD operation
+5. Connect heterogeneous components
 
 
 
-## 异构组件模版yaml schema格式（TODO）
-## 设计 (TODO)
+## Heterogeneous component template yaml schema format (TODO)
+## Desgin (TODO)
 
-组件、接口、连线、协议Provider
+Component, interface, connection, protocol provider
 
-* 图示
-## 已知问题
-## 开源协议（Apache License 2.0）
-## 相关讨论区
+
+## Known issues(TODO)
+## Open Source Agreement (Apache License 2.0)
+## Related Discussion Area
 * [Telegram](https://t.me/joinchat/AC9xSxWoAgXjLnBuQPFDqw)
 * [Slack](https://merceedgecommunity.slack.com/archives/CFNQ62K6Y)
 
