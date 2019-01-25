@@ -76,7 +76,6 @@ MerceEdge可以：
   5. 运行一个边缘计算的例子
    
     （先Ctrl + c 停止上面的edge运行）
-<<<<<<< HEAD
 
     （然后修改rtmp组件的配置文件）
      (MerceEdge) MerceEdge # vim merceedge/tests/component_template/rtmp_component.yaml
@@ -85,9 +84,6 @@ MerceEdge可以：
 
      (运行)
      (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
-=======
-     (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
->>>>>>> bcb4e5ae1201017f8c6f945f6d23e8340a9c84f8
 
 打开另一个终端窗口, 同样使用前面设置好的MerceEdge virtualenv, 运行以下命令：
 
