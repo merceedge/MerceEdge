@@ -1,6 +1,6 @@
 # MerceEdge
 
-[English（TODO）](https://translate.google.cn/)
+[English](https://github.com/merceedge/MerceEdge/blob/master/README_EN.md)
 
 
 MerceEdge是一个边缘异构协议组件连接服务，可以运行在PC、RaspberryPi上以及服务器上，可以应用在多种场合，比如：SmartHome，SmartFactroy等，目前计划支持的协议包括：mqtt、ZigBee、BLE、REST API
