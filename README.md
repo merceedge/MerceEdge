@@ -37,23 +37,23 @@ MerceEdge可以：
 
   2. 安装python3.6环境, 最好使用virtualenv或者pipenv, 具体情况请根据你的操作系统环境进行安装
 
-在本地安装一个mqtt服务端（由于MerceEdge使用了MQTT服务，所以我们需要一个MQTT服务器，在MerceEdge中也可以指定一个已有的MQTT服务，在后面的文档中会介绍。这里我们直接安装一个MQTT服务就好）。本例使用mosquitto服务,  你可以参考[这里](https://mosquitto.org/download/)来下载安装， 安装好后默认运行：
+在本地安装一个mqtt服务端（由于MerceEdge使用了MQTT服务，所以我们需要一个MQTT服务器，在MerceEdge中也可以指定一个已有的MQTT服务，在后面的文档中会介绍。这里我们直接安装一个MQTT服务就好）。本例使用mosquitto服务,  你可以参考[这里](https://mosquitto.org/download/)来下载安装， 安装好后默认运行：
 
 
-    mosquitto -c /usr/local/etc/mosquitto/mosquitto.conf
+    mosquitto -c /usr/local/etc/mosquitto/mosquitto.conf
 
 
   3. 安装MerceEdge
 
     (MerceEdge) / # cd MerceEdge
-    (MerceEdge) MerceEdge # python setup.py develop
+    (MerceEdge) MerceEdge # python setup.py develop
 
 
 
 
   4. 验证一下是否安装成功
    
-    (MerceEdge) MerceEdge # edge
+    (MerceEdge) MerceEdge # edge
 
      __  __                   _____    _            
     |  \/  | ___ _ __ ___ ___| ____|__| | __ _  ___ 
@@ -73,9 +73,10 @@ MerceEdge可以：
 
 
 
-  5. 运行一个边缘计算的例子
+  5. 运行一个边缘计算的例子
    
     （先Ctrl + c 停止上面的edge运行）
+<<<<<<< HEAD
 
     （然后修改rtmp组件的配置文件）
      (MerceEdge) MerceEdge # vim merceedge/tests/component_template/rtmp_component.yaml
@@ -84,11 +85,14 @@ MerceEdge可以：
 
      (运行)
      (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
+=======
+     (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
+>>>>>>> bcb4e5ae1201017f8c6f945f6d23e8340a9c84f8
 
-打开另一个终端窗口, 同样使用前面设置好的MerceEdge virtualenv, 运行以下命令：
+打开另一个终端窗口, 同样使用前面设置好的MerceEdge virtualenv, 运行以下命令：
 
     (MerceEdge)  MerceEdge # cd merceedge/tests/demo 
-    (MerceEdge)  demo #  python object_detector_ui.py
+    (MerceEdge)  demo # python object_detector_ui.py
 
 
 
@@ -98,14 +102,14 @@ MerceEdge可以：
 ## 例子
   * 边缘计算的例子
 
-  本例子从rtmp服务接收视频流，并使用目标识别的“连线负载”，对视频流进行目标识别分析，然后使用MQTT服务把视频分析结果发到显示终端组件上。
+  本例子从rtmp服务接收视频流，并使用目标识别的“连线负载”，对视频流进行目标识别分析，然后使用MQTT服务把视频分析结果发到显示终端组件上。
 
-    (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
+    (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
 
-打开另一个终端窗口, 同样使用前面设置好的MerceEdge virtualenv, 运行以下命令：
+打开另一个终端窗口, 同样使用前面设置好的MerceEdge virtualenv, 运行以下命令：
 
     (MerceEdge)  MerceEdge # cd merceedge/tests/demo 
-    (MerceEdge)  demo #  python object_detector_ui.py
+    (MerceEdge)  demo # python object_detector_ui.py
 
   * 使用不同协议button和light的连接例子(TODO)
   * 过滤接口数据的例子(TODO)
@@ -127,10 +131,10 @@ MerceEdge可以：
 组件、接口、连线、协议Provider
 
 * 图示
-## 已知问题
+## 已知问题
 ## 开源协议（Apache License 2.0）
-## 相关讨论区
-* [Telegram](https://t.me/joinchat/AC9xSxWoAgXjLnBuQPFDqw)
+## 相关讨论区
+* [Telegram](https://t.me/joinchat/AC9xSxWoAgXjLnBuQPFDqw)
 * [Slack](https://merceedgecommunity.slack.com/archives/CFNQ62K6Y)
 
 #MerceEdge#
