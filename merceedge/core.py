@@ -7,6 +7,7 @@ import sys
 import copy
 import json
 from os.path import join
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 import merceedge.util as util
 import merceedge.util.dt as dt_util
@@ -160,7 +161,7 @@ class MerceEdge(object):
                 wireload = wire.get('wireload', None)
                 if wireload:
                     wireload_name = wireload['name']
-
+                
                 self.connect_interface(output_com.id, output_name,
                                         input_com.id, input_name,
                                         wireload_name=wireload_name)
@@ -253,7 +254,8 @@ class Output(Interface):
         self.output_wires = {}
         self.data = {}
 
-        # read output configuration,
+        # read output configuration
+        # print("init output {} {}".format(name, protocol))
         self._init_provider()
 
     def wires_info(self):
@@ -276,10 +278,12 @@ class Output(Interface):
     def _init_provider(self):
         try:
             self.provider = ServiceProviderFactory.get_provider(self.protocol)
+            _LOGGER.debug("Output {} load provider {}".format(self.name, self.provider))
             # if self.provider:
             #     self.provider.new_instance_setup(self.name, self.attrs, True)
         except KeyError as e:
-            # TODO log no such provider key error
+            # log no such provider key error
+            _LOGGER.error("Cannot load {} provider".format(self.protocol))
             raise
     
     def conn_output_sink(self, output_wire_params={}):
@@ -358,6 +362,7 @@ class Wire(Entity):
         # eg: condition if ... elif ... else ... 
         # filter/AI/custom module, etc...
         self.wire_load = None
+        print("wireloadname {}".format(wireload_name))
         if wireload_name:
             self._create_wireload_object(wireload_name)
         self.edge.bus.listen("wire_ouput_{}".format(self.id), self.wire_output_handler)
@@ -400,7 +405,10 @@ class Wire(Entity):
         data = payload
         if self.wire_load:
             data = self.wire_load.process(data)
-        if data:
+            if data is not None:
+                self.output.emit_data_to_input(data)
+
+        elif type(data).__module__ != 'numpy' and data is not None:
             self.output.emit_data_to_input(data)
     
     def wire_output_handler(self, payload):
@@ -456,12 +464,14 @@ class WireLoadFactory:
         config: user configuration
         """
         self._classes = {}
-        self._load(config['wireload']['path'])
+        path = os.path.join(dir_path, config['wireload']['path'])
+        self._load(path)
 
     def _load(self, path):
         """Walk throuth path and load WireLoad subclass
         """
         self._classes = module_util.load_modules(path, WireLoad)
+        _LOGGER.debug("Load wireloads modules: {}".format(self._classes))
         
     def get_class(self, wireload_name):
         return self._classes.get(wireload_name, None)

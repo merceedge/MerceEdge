@@ -6,7 +6,7 @@ component:
     - name: rtmp_video_stream
       protocol: 
         name: rtmp
-        # rtmp_url: "rtmp://192.168.1.57/LiveApp/test003"
+        # rtmp_url: "rtmp://change_your_rtmp_path_here"
         rtmp_url: "/Users/hobo/Desktop/1548309591973109.mp4"
         code: h.264
 

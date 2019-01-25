@@ -5,7 +5,7 @@ Flask
 flask-restful
 flask-sqlalchemy
 aiohttp
-
+pyfiglet
 
 
 # swagger

@@ -1,4 +1,4 @@
-provider_path: "./merceedge/providers"
+provider_path: "providers"
 
 mqtt:
   broker: 127.0.0.1
@@ -11,7 +11,7 @@ mqtt:
   protocol: 3.1.1
 
 OpenApI:
-  swagger_path: "/Users/hobo/MyProjects/MerceProject/MerceEdge/merceedge/tests/swagger"
+  swagger_path: "tests/swagger"
 
 wireload:
-  path: "/Users/hobo/MyProjects/MerceProject/MerceEdge/merceedge/tests/wireload"
+  path: "tests/wireload"
