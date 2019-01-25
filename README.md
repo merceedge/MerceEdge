@@ -37,10 +37,10 @@ MerceEdge可以：
 
   2. 安装python3.6环境, 最好使用virtualenv或者pipenv, 具体情况请根据你的操作系统环境进行安装
 
-在本地安装一个mqtt服务端（由于MerceEdge使用了MQTT服务，所以我们需要一个MQTT服务器，在MerceEdge中也可以指定一个已有的MQTT服务，在后面的文档中会介绍。这里我们直接安装一个MQTT服务就好）。本例使用mosquitto服务,  你可以参考[这里](https://mosquitto.org/download/)来下载安装， 安装好后默认运行：
+在本地安装一个mqtt服务端（由于MerceEdge使用了MQTT服务，所以我们需要一个MQTT服务器，在MerceEdge中也可以指定一个已有的MQTT服务，在后面的文档中会介绍。这里我们直接安装一个MQTT服务就好）。本例使用mosquitto服务,  你可以参考[这里](https://mosquitto.org/download/)来下载安装， 安装好后默认运行：
 
 
-    mosquitto -c /usr/local/etc/mosquitto/mosquitto.conf
+    mosquitto -c /usr/local/etc/mosquitto/mosquitto.conf
 
 
   3. 安装MerceEdge
@@ -73,7 +73,7 @@ MerceEdge可以：
 
 
 
-  5. 运行一个边缘计算的例子
+  5. 运行一个边缘计算的例子
    
     （先Ctrl + c 停止上面的edge运行）
      (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
