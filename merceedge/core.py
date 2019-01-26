@@ -43,12 +43,17 @@ class MerceEdge(object):
     """Root object of Merce Edge node"""
     def __init__(self, user_config):
         self.user_config = user_config
+
+        self.loop = asyncio.get_event_loop()
+        self.executor = ThreadPoolExecutor(**executor_opts)
+        self.loop.set_default_executor(self.executor)
+
+        self.bus = EventBus(pool)
+        self.services = ServiceRegistry(self.bus, pool)
+        
         self.component_templates = {} # key: component template name
         self.components = {}  # key: component id
         self.wires = {} # key: wire id
-        self.pool = pool = util.create_worker_pool()
-        self.bus = EventBus(pool)
-        self.services = ServiceRegistry(self.bus, pool)
         self.wireload_factory = WireLoadFactory(user_config)
         # ServiceProviderFactory.init(user_config['provider_path'])
         # self.states = StateMachine(self.bus)
