@@ -14,7 +14,7 @@ class RTMPProvider(ServiceProvider):
     def __init__(self, edge, config):
         super(RTMPProvider, self).__init__(edge, config)
 
-    def setup(self, edge, config):
+    async def async_setup(self, edge, config):
 
         pass
 

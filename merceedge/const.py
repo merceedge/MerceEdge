@@ -12,6 +12,7 @@ MATCH_ALL = '*'
 EVENT_TIME_CHANGED = "time_changed"
 EVENT_CALL_SERVICE = "call_service"
 EVENT_SERVICE_REGISTERED = "service_registered"
+EVENT_SERVICE_REMOVED = 'service_removed'
 EVENT_STATE_CHANGED = "state_changed"
 EVENT_SERVICE_EXECUTED = "service_executed"
 EVENT_RTMP_FRAME = "rtmp_frame"

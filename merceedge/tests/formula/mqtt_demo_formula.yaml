@@ -1,0 +1,17 @@
+version: '1'
+formula: mqtt_demo_formula
+author: MerceEdge Group
+info: This is a mqtt demo formula.
+wires:
+  - output_slot: 
+      component: mqtt_button
+      output: 
+        name: toggle_output
+    input_sink: 
+      component: mqtt_switch
+      input: 
+        name: toggle_input
+        
+  
+
+

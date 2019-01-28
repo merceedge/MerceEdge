@@ -1,5 +1,5 @@
 import logging
-
+import asyncio
 from merceedge.providers.base import (
     ServiceProvider,
     Singleton
@@ -13,6 +13,15 @@ from merceedge.service import (
 #     Output
 # )
 from merceedge import util
+from merceedge.util.async_util import (
+    Context,
+    callback,
+    is_callback,
+    run_callback_threadsafe,
+    run_coroutine_threadsafe,
+    CALLBACK_TYPE,
+    T
+)
 
 _LOGGER = logging.getLogger(__name__)
 CONF_BROKER = 'broker'
@@ -50,10 +59,11 @@ class MqttServiceProvider(ServiceProvider):
     
     def __init__(self, edge, config):
         # TODO broker_ip broker_port username password etc.
+        self._paho_lock = asyncio.Lock(loop=edge.loop)
         super(MqttServiceProvider, self).__init__(edge, config)
-        
 
-    def setup(self, edge , config):
+
+    async def async_setup(self, edge , config):
         self.edge = edge
         # TODO need validate config
         
@@ -96,19 +106,30 @@ class MqttServiceProvider(ServiceProvider):
         # self._mqttc.on_disconnect = self._mqtt_on_disconnect
         self._mqttc.on_message = self._mqtt_on_message
 
-        self._mqttc.connect(broker, port, keepalive)
+        result = await self.edge.async_add_job(
+                    self._mqttc.connect, broker, port, keepalive
+        )
+        
+        if result != 0:
+            import paho.mqtt.client as mqtt
+            _LOGGER.error("Failed to connect: %s", mqtt.error_string(result))
+            return False
+
         self._mqttc.loop_start()
         # register mqtt publish service 
-        self.edge.services.register(self.DOMAIN, 
-                                self.SERVICE_PUBLISH,
-                                self._publish_service,
-                                # description=self.SERVICE_PUBLISH
-                                )
+        
+        self.edge.services.async_register(self.DOMAIN, 
+                                          self.SERVICE_PUBLISH,
+                                          self.async_publish_service,
+                                          # description=self.SERVICE_PUBLISH
+                                         )
+        return True
     
-    def _publish_service(self, call: ServiceCall):
+    async def async_publish_service(self, call: ServiceCall):
         """Handle MQTT publish service calls."""
         msg_topic = call.data.get(ATTR_TOPIC)
         payload = call.data.get(ATTR_PAYLOAD)
+
         payload_template = call.data.get(ATTR_PAYLOAD_TEMPLATE)
         qos = call.data.get(ATTR_QOS, DEFAULT_QOS)
         retain = call.data.get(ATTR_RETAIN, DEFAULT_RETAIN)
@@ -128,7 +149,13 @@ class MqttServiceProvider(ServiceProvider):
             #     return
         if msg_topic is None or payload is None:
             return
-        self._mqttc.publish(msg_topic, payload, qos, retain)
+        
+        async with self._paho_lock:
+            _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
+            await self.edge.async_add_job(
+                self._mqttc.publish, msg_topic, payload, qos, retain) 
+        
+        
 
     def _build_publish_data(self, topic, qos, retain):
         """Build the arguments for the publish service without the payload."""
@@ -142,16 +169,25 @@ class MqttServiceProvider(ServiceProvider):
     def _mqtt_on_message(self, _mqttc, _userdata, msg):
         # TODO need fix this proto code
         self.edge.bus.fire(self.MQTT_MSG_RCV_EVENT, msg.payload.decode('utf-8'))
+    
 
-    def conn_output_sink(self, output, output_wire_params, callback):
+    async def conn_output_sink(self, output, output_wire_params, callback):
         # TODO mqtt client subscribe topic (need fix this proto code)
-        self._mqttc.subscribe(output.get_attrs('topic'), 0)
+        # self._mqttc.subscribe(output.get_attrs('topic'), 0)
+        topic = output.get_attrs('topic')
+        _LOGGER.debug("Subscribing to %s", topic)
+
+        async with self._paho_lock:
+            result = None  # type: int
+            result, _ = await self.edge.async_add_job(
+                self._mqttc.subscribe, topic, 0)
+        
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
-        try:
-            mqtt_listener_num = self.edge.bus.listeners[self.MQTT_MSG_RCV_EVENT]
-        except KeyError:
-            # TODO log no need listen MQTT_MSG_RCV_EVENT msg again
-            self.edge.bus.listen(self.MQTT_MSG_RCV_EVENT, callback)
+        # try:
+        #     mqtt_listener_num = await self.edge.bus.listeners[self.MQTT_MSG_RCV_EVENT]
+        # except KeyError:
+        #     # TODO log no need listen MQTT_MSG_RCV_EVENT msg again
+        self.edge.bus.async_listen(self.MQTT_MSG_RCV_EVENT, callback)
 
     def disconn_output_sink(self, output):
         """ disconnect wire output sink
@@ -159,10 +195,10 @@ class MqttServiceProvider(ServiceProvider):
         if len(output.output_wires) == 1:
             self._mqttc.unsubscribe(output.get_attrs('topic'))
         
-    def emit_input_slot(self, input, payload):
+    async def emit_input_slot(self, input, payload):
         """Publish message to an MQTT topic."""
         data = self._build_publish_data(input.get_attrs('topic'),
                                         input.get_attrs('qos'), 
                                         input.get_attrs('retain'))
         data[ATTR_PAYLOAD] = payload
-        self.edge.services.call(self.DOMAIN, self.SERVICE_PUBLISH, data)
+        await self.edge.services.async_call(self.DOMAIN, self.SERVICE_PUBLISH, data)
