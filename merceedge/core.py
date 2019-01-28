@@ -50,8 +50,6 @@ from merceedge.api_server.models import (
 
 DOMAIN = "merceedge"
 
-# How often time_changed event should fire
-# TIMER_INTERVAL = 1  # seconds
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,11 +86,10 @@ class MerceEdge(object):
         # TODO
     
     def start(self):
-        # TODO 
         """Start.
 
         Note: This function is only used for testing.
-        For regular use, use "await hass.run()".
+        For regular use, use "await edge.run()".
         """
         # Register the async start
         fire_coroutine_threadsafe(self.async_start(), self.loop)
@@ -329,8 +326,8 @@ class MerceEdge(object):
             else:
                 await asyncio.sleep(0)
     
-    async def async_run(self, *, attach_signals: bool = True) -> int:
-        """main entry point.
+    async def async_run(self) -> int:
+        """ MerceEdge main entry point.
 
         Start and block until stopped.
 
@@ -340,13 +337,9 @@ class MerceEdge(object):
         self._stopped = asyncio.Event()
 
         await self.async_start()
-        # if attach_signals:
-        #     from homeassistant.helpers.signal \
-        #             import async_register_signal_handling
-        #     async_register_signal_handling(self)
-
-        # await self._stopped.wait()
-        return 0
+      
+        await self._stopped.wait()
+        return self.exit_code
     
     async def async_start(self) -> None:
         """Finalize startup from inside the event loop.

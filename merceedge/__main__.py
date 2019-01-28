@@ -8,7 +8,7 @@ import os
 import asyncio
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
-from merceedge.util.async_util import asyncio_run
+
 from merceedge.core import (
     MerceEdge,
     Component,
@@ -20,6 +20,34 @@ from merceedge.providers import ServiceProviderFactory
 from merceedge.util import yaml as yaml_util
 from merceedge.api_server import app as api_server
 
+def set_loop() -> None:
+    """Attempt to use uvloop."""
+    import asyncio
+    from asyncio.events import BaseDefaultEventLoopPolicy
+
+    policy = None
+
+    if sys.platform == 'win32':
+        if hasattr(asyncio, 'WindowsProactorEventLoopPolicy'):
+            # pylint: disable=no-member
+            policy = asyncio.WindowsProactorEventLoopPolicy()
+        else:
+            class ProactorPolicy(BaseDefaultEventLoopPolicy):
+                """Event loop policy to create proactor loops."""
+
+                _loop_factory = asyncio.ProactorEventLoop
+
+            policy = ProactorPolicy()
+    else:
+        try:
+            import uvloop
+        except ImportError:
+            pass
+        else:
+            policy = uvloop.EventLoopPolicy()
+
+    if policy is not None:
+        asyncio.set_event_loop_policy(policy)
 
 
 # def run_edge_process(edge_proc):
@@ -75,6 +103,8 @@ def main():
     ascii_banner = pyfiglet.figlet_format("MerceEdge")
     print(ascii_banner)
 
+    set_loop()
+
     # parse args
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--formula', dest='formula', help='formula yml')
@@ -117,11 +147,10 @@ def main():
     # while keep_running:
     #     edge_proc = Process(target=setup_and_run_hass, args=(edge, ))
     #     keep_running, exit_code = run_edge_process(edge_proc)
-    
+    # from merceedge.util.async_util import asyncio_run
     # exit_code = asyncio_run(setup_and_run_edge(edge))
     edge.start()
-
-    return 0
+    # return exit_code
 
 
 if __name__ == "__main__":
