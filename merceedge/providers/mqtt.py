@@ -129,6 +129,8 @@ class MqttServiceProvider(ServiceProvider):
         """Handle MQTT publish service calls."""
         msg_topic = call.data.get(ATTR_TOPIC)
         payload = call.data.get(ATTR_PAYLOAD)
+        # print("xxxxxxxx")
+        # print(payload)
 
         payload_template = call.data.get(ATTR_PAYLOAD_TEMPLATE)
         qos = call.data.get(ATTR_QOS, DEFAULT_QOS)

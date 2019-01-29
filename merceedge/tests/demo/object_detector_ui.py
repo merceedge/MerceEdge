@@ -36,7 +36,7 @@ def main():
         t = time.time()
         if input_q.empty():
             # print("input empty")
-            pass
+            time.sleep(0.1)
         else:
             msg = input_q.get()
             frame_bytes = msg[:height*width*3]
@@ -45,7 +45,7 @@ def main():
             # print ("-"*30)
             # print(detect_bytes.decode('utf8'))
             data = json.loads(detect_bytes.decode('utf8'))
-            # print(data)
+            print(len(data))
             # # frame_str = data['frame']
 
             frame = np.frombuffer(frame_bytes, dtype=np.uint8).reshape(height, width, 3)

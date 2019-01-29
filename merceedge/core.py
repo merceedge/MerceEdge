@@ -10,6 +10,7 @@ import attr
 import uuid
 import functools
 import datetime
+import multiprocessing
 from time import monotonic
 from concurrent.futures import ThreadPoolExecutor
 from async_timeout import timeout
@@ -60,7 +61,7 @@ DOMAIN = "merceedge"
 
 logging.basicConfig()
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
+_LOGGER.setLevel(logging.INFO)
 
 class MerceEdge(object):
     """Root object of Merce Edge node"""
@@ -105,7 +106,7 @@ class MerceEdge(object):
         # Run forever
         try:
             # Block until stopped
-            _LOGGER.info("Starting Home Assistant core loop")
+            _LOGGER.info("Starting MerceEdge core loop")
             self.loop.run_forever()
         finally:
             self.loop.close()
@@ -567,9 +568,10 @@ class Input(Interface):
     async def emit_data_to_input(self, payload):
         # Emit data to EventBus and invoke configuration service send data function.
         # TODO payload根据wire类型进行转换
-        print("emit_data_to_input:")
-        print(payload)
-        await self.provider.emit_input_slot(self, payload.data)
+        # print("emit_data_to_input:")
+        # print(type(payload))
+        # print(payload.data)
+        await self.provider.emit_input_slot(self, payload)
 
 
 class State(object):
@@ -597,8 +599,8 @@ class Wire(Entity):
         self.wire_load = None
         print("wireloadname {}".format(wireload_name))
         if wireload_name:
+            self.wireload_name = wireload_name
             self._create_wireload_object(wireload_name)
-        # self.edge.bus.listen("wire_ouput_{}".format(self.id), self.wire_output_handler)
         
     def __repr__(self):
         wire_info = {}
@@ -612,6 +614,9 @@ class Wire(Entity):
         wireload_class = self.edge.wireload_factory.get_class(wireload_name)
         if wireload_class:
             self.wire_load = wireload_class()
+            # start process 
+            # TODO Maybe need wait MerceEdge start?
+            self.wire_load.start()
 
     def set_input_params(self, parameters):
         self.input_params = parameters
@@ -619,14 +624,6 @@ class Wire(Entity):
     def set_output_params(self, parameters):
         self.output_params = parameters
     
-    # @property
-    # def input(self):
-    #     return self.input
-    
-    # @property
-    # def output(self):
-    #     return self.output
-
     def disconnect(self):
         self.input.del_wire(self.id)
         self.output.del_wire(self.id)
@@ -637,19 +634,17 @@ class Wire(Entity):
         # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
         data = payload
         if self.wire_load:
-            data = self.wire_load.process(data)
-            if data is not None:
-                await self.output.emit_data_to_input(data)
+            self.wire_load.input_q.put(data)
+            try:
+                wireload_output = self.wire_load.output_q.get_nowait()
+                await self.output.emit_data_to_input(wireload_output)
+            except multiprocessing.queues.Empty:
+                # _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
+                pass
 
         elif type(data).__module__ != 'numpy' and data is not None:
             await self.output.emit_data_to_input(data)
     
-    # def wire_output_handler(self, payload):
-    #     data = payload.data
-    #     if self.wire_load:
-    #         data = self.wire_load.process(data)
-    #     self.output.emit_data_to_input(data)
-
 
 class WireLoadFactory:
     def __init__(self, config):
@@ -670,21 +665,38 @@ class WireLoadFactory:
         return self._classes.get(wireload_name, None)
 
 
-class WireLoad(Entity):
+
+class WireLoad(Entity, multiprocessing.Process):
     """Wire load abstract class. Mounted on wire, processing data through wire.
         Filter, Analiysis, Process, etc.
     """
     name = ''
     def __init__(self, init_params={}):
+        super(WireLoad, self).__init__()
         self.init_params = init_params
-        self.ouput_data = None
+        self.input_q = multiprocessing.Queue()
+        self.output_q = multiprocessing.Queue()
     
-    def process(self, input_data):
+    def before_run_setup(self):
+        """Need implemented"""
         raise NotImplementedError
 
+    def process(self, input_data):
+        """Need implemented"""
+        raise NotImplementedError
+    
+
+    def run(self):
+        self.before_run_setup()
+        while True:
+            input_data = self.input_q.get(block=True)
+            process_result = self.process(input_data)
+            if process_result is not None:
+                self.output_q.put(process_result)
+        
     @property
     def output(self):
-        return self.ouput_data
+        return self.ouput_q
     
  
 
@@ -771,7 +783,8 @@ class EventBus(object):
         """Fire an event.
         This method must be run in the event loop
         """
-        _LOGGER.info("async_fire")
+        # _LOGGER.info("async_fire: {}".format(event_type))
+
         listeners = self._listeners.get(event_type, [])
 
         # EVENT_HOMEASSISTANT_CLOSE should go only to his listeners
@@ -781,8 +794,8 @@ class EventBus(object):
 
         event = Event(event_type, event_data, None, context)
 
-        if event_type != EVENT_TIME_CHANGED:
-            _LOGGER.debug("Bus:Handling %s", event)
+        # if event_type != EVENT_TIME_CHANGED:
+        #     _LOGGER.debug("Bus:Handling %s", event)
 
         if not listeners:
             return

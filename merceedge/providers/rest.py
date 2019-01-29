@@ -102,8 +102,8 @@ class RestApiProvider(ServiceProvider):
                                                         response_handler)
 
     async def request_timer_handler(self, event):
-        print("*"*30)
-        print(event)
+        # print("*"*30)
+        # print(event)
         for operationId, args in self._requesters.items():
             # request_action, url, body, headers, files
             data = {
@@ -153,6 +153,8 @@ class RestApiProvider(ServiceProvider):
         url = "{}://{}{}".format(schemes[0], host, url)
         return request_action, url, body, headers, files
 
+    # TODO  disconn_output_sink
+    
     async def emit_input_slot(self, input, payload):
         """send data to input slot, for rest api, invoide corotutine request.
         """
