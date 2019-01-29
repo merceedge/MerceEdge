@@ -9,6 +9,8 @@ import asyncio
 import attr
 import uuid
 import functools
+import datetime
+from time import monotonic
 from concurrent.futures import ThreadPoolExecutor
 from async_timeout import timeout
 from typing import (  # noqa: F401 pylint: disable=unused-import
@@ -39,7 +41,13 @@ from merceedge.const import (
     EVENT_TIME_CHANGED,
     EVENT_SERVICE_EXECUTED,
     EVENT_CALL_SERVICE,
-    EVENT_STATE_CHANGED
+    EVENT_STATE_CHANGED,
+    EVENT_TIMER_OUT_OF_SYNC,
+    EVENT_EDGE_STOP,
+    ATTR_NOW,
+    ATTR_DATE,
+    ATTR_TIME,
+    ATTR_SECONDS,
 )
 from merceedge.service import ServiceRegistry
 from merceedge.providers import ServiceProviderFactory
@@ -50,9 +58,9 @@ from merceedge.api_server.models import (
 
 DOMAIN = "merceedge"
 
-
+logging.basicConfig()
 _LOGGER = logging.getLogger(__name__)
-
+_LOGGER.setLevel(logging.DEBUG)
 
 class MerceEdge(object):
     """Root object of Merce Edge node"""
@@ -131,7 +139,11 @@ class MerceEdge(object):
             pass
         return None
 
-    async def connect_interface(self, output_component_id, output_name, input_component_id, input_name, wire_id=None, wireload_name=None):
+    async def connect_interface(self, 
+                                output_component_id, output_name, 
+                                input_component_id, input_name, 
+                                output_params={}, input_params={},
+                                wire_id=None, wireload_name=None):
         """ connenct wire
         """
         wire = Wire(edge=self, 
@@ -139,9 +151,11 @@ class MerceEdge(object):
                     input_slot=self.components[input_component_id].inputs[input_name], 
                     wireload_name=wireload_name,
                     id=wire_id)
+        wire.set_input_params(output_params)
+        wire.set_output_params(input_params)
         self.wires[wire.id] = wire
 
-        await self.components[output_component_id].outputs[output_name].conn_output_sink()
+        await self.components[output_component_id].outputs[output_name].conn_output_sink(output_params)
         return wire
 
     
@@ -195,6 +209,9 @@ class MerceEdge(object):
                 output_name = wire['output_slot']['output']['name']
                 input_name = wire['input_sink']['input']['name']
 
+                # wire interface paramaters
+                output_params = wire['output_slot']['output'].get('parameters', {})
+                input_params = wire['input_sink']['input'].get('parameters', {})
                 # wireload is optional
                 wireload_name = None
                 wireload = wire.get('wireload', None)
@@ -203,6 +220,7 @@ class MerceEdge(object):
                 
                 await self.connect_interface(output_com.id, output_name,
                                         input_com.id, input_name,
+                                        output_params, input_params,
                                         wireload_name=wireload_name)
         except KeyError:
             _LOGGER.error("Load formula error, program exit!")
@@ -376,7 +394,7 @@ class MerceEdge(object):
         #     return
 
         # self.state = CoreState.running
-        # _async_create_timer(self)
+        _async_create_timer(self)
 
 
 class Entity(object):
@@ -753,7 +771,7 @@ class EventBus(object):
         """Fire an event.
         This method must be run in the event loop
         """
-        print("asnyc_fire")
+        _LOGGER.info("async_fire")
         listeners = self._listeners.get(event_type, [])
 
         # EVENT_HOMEASSISTANT_CLOSE should go only to his listeners
@@ -830,7 +848,7 @@ class EventBus(object):
         return remove_listener
 
     @callback
-    def asnyc_listen_once(
+    def async_listen_once(
             self, event_type: str, listener: Callable) -> CALLBACK_TYPE:
         """Listen once for event of a specific type.
 
@@ -877,6 +895,43 @@ class EventBus(object):
 
 
 
+def _async_create_timer(edge: MerceEdge) -> None:
+    """Create a timer that will start on EVENT_EDGE_START."""
+    handle = None
 
+    def schedule_tick(now: datetime.datetime) -> None:
+        """Schedule a timer tick when the next second rolls around."""
+        nonlocal handle
+
+        slp_seconds = 1 - (now.microsecond / 10**6)
+        target = monotonic() + slp_seconds
+        handle = edge.loop.call_later(slp_seconds, fire_time_event, target)
+
+    @callback
+    def fire_time_event(target: float) -> None:
+        """Fire next time event."""
+        now = dt_util.utcnow()
+
+        edge.bus.async_fire(EVENT_TIME_CHANGED,
+                            {ATTR_NOW: now})
+
+        # If we are more than a second late, a tick was missed
+        late = monotonic() - target
+        if late > 1:
+            edge.bus.async_fire(EVENT_TIMER_OUT_OF_SYNC,
+                                {ATTR_SECONDS: late})
+
+        schedule_tick(now)
+
+    @callback
+    def stop_timer(_: Event) -> None:
+        """Stop the timer."""
+        if handle is not None:
+            handle.cancel()
+
+    edge.bus.async_listen_once(EVENT_EDGE_STOP, stop_timer)
+
+    _LOGGER.info("Timer:starting")
+    schedule_tick(dt_util.utcnow())
 
 

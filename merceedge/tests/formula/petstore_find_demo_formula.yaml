@@ -6,17 +6,16 @@ wires:
   - output_slot: 
       component: petstore_component
       # authorizations: TODO
-      ouput: 
+      output: 
         name: findPetsByTags
         parameters:
-          - name: "tags"
-            value: "blackcat"
+          tags: "blackcat"
     input_sink: 
       component: mqtt_switch
       input: 
         name: toggle_input
-    wireload: 
-      name: filter_wireload
+    # wireload: 
+    #   name: filter_wireload
       # parameters: TODO
         
   

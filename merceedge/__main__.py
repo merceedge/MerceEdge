@@ -143,14 +143,11 @@ def main():
         edge.loop.run_until_complete(edge.load_formula(formula_path))
 
     # 4. run ...
-    # keep_running = True
-    # while keep_running:
-    #     edge_proc = Process(target=setup_and_run_hass, args=(edge, ))
-    #     keep_running, exit_code = run_edge_process(edge_proc)
-    # from merceedge.util.async_util import asyncio_run
-    # exit_code = asyncio_run(setup_and_run_edge(edge))
     edge.start()
-    # return exit_code
+    from merceedge.util.async_util import asyncio_run
+    exit_code = asyncio_run(setup_and_run_edge(edge))
+    
+    return exit_code
 
 
 if __name__ == "__main__":
