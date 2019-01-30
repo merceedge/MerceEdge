@@ -1,6 +1,7 @@
 from threading import Thread
 import cv2
 import numpy as np
+import time
 
 from merceedge.providers.base import ServiceProvider
 
@@ -14,7 +15,7 @@ class RTMPProvider(ServiceProvider):
     def __init__(self, edge, config):
         super(RTMPProvider, self).__init__(edge, config)
 
-    def setup(self, edge, config):
+    async def async_setup(self, edge, config):
 
         pass
 
@@ -37,23 +38,19 @@ class RTMPProvider(ServiceProvider):
 
             # self.edge.bus.fire("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
             #                     data)
+            # TODO Send frame to process queue
+            time.sleep(0.1)
             callback(frame)
             
 
     def _new_rtmp_client(self, rtmp_id, rtmp_url, params, callback):
         # Setup a thread, read rtmp urls   
         t = Thread(target=self._rtmp_pull_stream, args=(rtmp_id, rtmp_url, params, callback))
-
-        # listen this rtmp client frame event on event bus
-        # self.edge.bus.listen("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
-        #                      callback)
-        
         t.start()
-        
+    
+    # TODO  disconn_output_sink
 
-        
-    def conn_output_sink(self, output, output_wire_params, callback):       
-        # api response or webhook -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
+    async def conn_output_sink(self, output, output_wire_params, callback):       
         rtmp_id = output.id
         rtmp_url = output.get_attrs('rtmp_url')
         self._new_rtmp_client(rtmp_id, rtmp_url, output_wire_params, callback)

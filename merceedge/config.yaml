@@ -10,8 +10,8 @@ mqtt:
   # certificate:
   protocol: 3.1.1
 
-OpenApI:
-  swagger_path: "tests/swagger"
+OpenAPI:
+  swagger_path: "merceedge/tests/swagger_ref"
 
 wireload:
   path: "tests/wireload"

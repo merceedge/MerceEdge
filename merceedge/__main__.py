@@ -5,6 +5,7 @@ import signal
 import argparse
 import pyfiglet
 import os 
+import asyncio
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -19,50 +20,72 @@ from merceedge.providers import ServiceProviderFactory
 from merceedge.util import yaml as yaml_util
 from merceedge.api_server import app as api_server
 
+def set_loop() -> None:
+    """Attempt to use uvloop."""
+    import asyncio
+    from asyncio.events import BaseDefaultEventLoopPolicy
 
+    policy = None
 
-def run_edge_process(edge_proc):
-    """ Runs a child hass process. Returns True if it should be restarted.  """
-    requested_stop = threading.Event()
-    edge_proc.daemon = True
+    if sys.platform == 'win32':
+        if hasattr(asyncio, 'WindowsProactorEventLoopPolicy'):
+            # pylint: disable=no-member
+            policy = asyncio.WindowsProactorEventLoopPolicy()
+        else:
+            class ProactorPolicy(BaseDefaultEventLoopPolicy):
+                """Event loop policy to create proactor loops."""
 
-    def request_stop(*args):
-        """ request hass stop, *args is for signal handler callback """
-        requested_stop.set()
-        edge_proc.terminate()
+                _loop_factory = asyncio.ProactorEventLoop
 
-    try:
-        signal.signal(signal.SIGTERM, request_stop)
-    except ValueError:
-        print('Could not bind to SIGTERM. Are you running in a thread?')
-
-    edge_proc.start()
-    try:
-        edge_proc.join()
-    except KeyboardInterrupt:
-        request_stop()
+            policy = ProactorPolicy()
+    else:
         try:
-            edge_proc.join()
-        except KeyboardInterrupt:
-            return False
+            import uvloop
+        except ImportError:
+            pass
+        else:
+            policy = uvloop.EventLoopPolicy()
 
-    return (not requested_stop.isSet() and
-            edge_proc.exitcode == 100,
-            edge_proc.exitcode)
+    if policy is not None:
+        asyncio.set_event_loop_policy(policy)
 
 
-def setup_and_run_hass(edge, top_process=False):
+# def run_edge_process(edge_proc):
+#     """ Runs a child hass process. Returns True if it should be restarted.  """
+#     requested_stop = threading.Event()
+#     edge_proc.daemon = True
+
+#     def request_stop(*args):
+#         """ request hass stop, *args is for signal handler callback """
+#         requested_stop.set()
+#         edge_proc.terminate()
+
+#     try:
+#         signal.signal(signal.SIGTERM, request_stop)
+#     except ValueError:
+#         print('Could not bind to SIGTERM. Are you running in a thread?')
+
+#     edge_proc.start()
+#     try:
+#         edge_proc.join()
+#     except KeyboardInterrupt:
+#         request_stop()
+#         try:
+#             edge_proc.join()
+#         except KeyboardInterrupt:
+#             return False
+
+#     return (not requested_stop.isSet() and
+#             edge_proc.exitcode == 100,
+#             edge_proc.exitcode)
+
+
+async def setup_and_run_edge(edge):
     """
-    Setup HASS and run. Block until stopped. Will assume it is running in a
+    Setup Edge and run. Block until stopped. Will assume it is running in a
     subprocess unless top_process is set to true.
     """
-    edge.start()
-    # exit_code = int(edge.block_till_stopped())
-
-    # if not top_process:
-    #     sys.exit(exit_code)
-    return 0
-
+    return await edge.async_run()
 
 def main():
     """Start Merce edge
@@ -79,6 +102,8 @@ def main():
     
     ascii_banner = pyfiglet.figlet_format("MerceEdge")
     print(ascii_banner)
+
+    set_loop()
 
     # parse args
     parser = argparse.ArgumentParser()
@@ -98,9 +123,14 @@ def main():
     # Walk throught service provider path and load all services
     print("Load service provider path: {}".format(os.path.join(dir_path, user_config['provider_path'])))
     ServiceProviderFactory.init(os.path.join(dir_path, user_config['provider_path']), edge, user_config)
+    setup_tasks = []
     for name, provider in ServiceProviderFactory.providers.items():
-        provider.setup(edge, user_config)
+        print(name)
+        setup_tasks.append(provider.async_setup(edge, user_config))
     
+    edge.loop.run_until_complete(asyncio.wait(setup_tasks))
+    
+    print('start run---')
     # 2. Read database and restore components / wires
     # edge.restore_entities_from_db()
 
@@ -110,14 +140,13 @@ def main():
     # load formula
     if args.formula:
         formula_path = args.formula.strip()
-        edge.load_formula(formula_path)
+        edge.loop.run_until_complete(edge.load_formula(formula_path))
 
     # 4. run ...
-    keep_running = True
-    while keep_running:
-        edge_proc = Process(target=setup_and_run_hass, args=(edge, ))
-        keep_running, exit_code = run_edge_process(edge_proc)
-
+    edge.start()
+    from merceedge.util.async_util import asyncio_run
+    exit_code = asyncio_run(setup_and_run_edge(edge))
+    
     return exit_code
 
 
