@@ -1,6 +1,7 @@
 from threading import Thread
 import cv2
 import numpy as np
+import time
 
 from merceedge.providers.base import ServiceProvider
 
@@ -38,6 +39,7 @@ class RTMPProvider(ServiceProvider):
             # self.edge.bus.fire("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
             #                     data)
             # TODO Send frame to process queue
+            time.sleep(0.1)
             callback(frame)
             
 

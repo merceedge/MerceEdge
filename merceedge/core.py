@@ -12,12 +12,13 @@ import functools
 import datetime
 import multiprocessing
 from time import monotonic
+import time
 from concurrent.futures import ThreadPoolExecutor
 from async_timeout import timeout
 from typing import (  # noqa: F401 pylint: disable=unused-import
     Optional, Any, Callable, List, TypeVar, Dict, Coroutine, Set,
     TYPE_CHECKING, Awaitable, Iterator)
-
+import queue
 from os.path import join
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -61,19 +62,20 @@ DOMAIN = "merceedge"
 
 logging.basicConfig()
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.INFO)
+_LOGGER.setLevel(logging.DEBUG)
 
 class MerceEdge(object):
     """Root object of Merce Edge node"""
     def __init__(self, user_config):
         self.user_config = user_config
 
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
         executor_opts = {'max_workers': None}  # type: Dict[str, Any]
         if sys.version_info[:2] >= (3, 6):
             executor_opts['thread_name_prefix'] = 'SyncWorker'
         self.executor = ThreadPoolExecutor(**executor_opts)
         self.loop.set_default_executor(self.executor)
+
         self._pending_tasks = []  # type: list
         self._track_task = True
         self.exit_code = 0
@@ -85,10 +87,6 @@ class MerceEdge(object):
         self.components = {}  # key: component id
         self.wires = {} # key: wire id
         self.wireload_factory = WireLoadFactory(user_config)
-        # ServiceProviderFactory.init(user_config['provider_path'])
-        # self.states = StateMachine(self.bus)
-        # self.config = Config()
-        # self._lock = threading.Lock()
         
     def dyload_component(self, component_config):
         """dynamic load new component"""
@@ -100,16 +98,23 @@ class MerceEdge(object):
         Note: This function is only used for testing.
         For regular use, use "await edge.run()".
         """
+        def sender():
+            self.loop.run_forever()
+
+       
         # Register the async start
         fire_coroutine_threadsafe(self.async_start(), self.loop)
-
+        t = threading.Thread(target=sender)
+        t.start()
         # Run forever
         try:
             # Block until stopped
             _LOGGER.info("Starting MerceEdge core loop")
-            self.loop.run_forever()
+            # self.loop.run_forever()
+            
         finally:
-            self.loop.close()
+            # self.loop.close()
+            pass
         return self.exit_code
 
     def stop(self):
@@ -250,15 +255,17 @@ class MerceEdge(object):
         args: parameters for method to call.
         """
         task = None
-
+        
         # Check for partials to properly determine if coroutine function
         check_target = target
         while isinstance(check_target, functools.partial):
             check_target = check_target.func
-
+        
         if asyncio.iscoroutine(check_target):
+            
             task = self.loop.create_task(target)  # type: ignore
         elif is_callback(check_target):
+            
             self.loop.call_soon(target, *args)
         elif asyncio.iscoroutinefunction(check_target):
             task = self.loop.create_task(target(*args))
@@ -268,6 +275,7 @@ class MerceEdge(object):
 
         # If a task is scheduled
         if self._track_task and task is not None:
+            print("5!!!")
             self._pending_tasks.append(task)
 
         return task
@@ -337,6 +345,7 @@ class MerceEdge(object):
         await asyncio.sleep(0)
 
         while self._pending_tasks:
+            print("async_block_till_done")
             pending = [task for task in self._pending_tasks
                        if not task.done()]
             self._pending_tasks.clear()
@@ -395,7 +404,7 @@ class MerceEdge(object):
         #     return
 
         # self.state = CoreState.running
-        _async_create_timer(self)
+        # _async_create_timer(self)
 
 
 class Entity(object):
@@ -528,12 +537,9 @@ class Output(Interface):
             2. emit data into input sink
         """
         #TODO self.protocol_provider.output_sink()
-
         for wire_id, wire in self.output_wires.items():
             self.edge.add_job(wire.fire, payload)
-    
         
-
 
 class Input(Interface):
     """Input"""
@@ -613,7 +619,7 @@ class Wire(Entity):
     def _create_wireload_object(self, wireload_name):
         wireload_class = self.edge.wireload_factory.get_class(wireload_name)
         if wireload_class:
-            self.wire_load = wireload_class()
+            self.wire_load = wireload_class(self)
             # start process 
             # TODO Maybe need wait MerceEdge start?
             self.wire_load.start()
@@ -636,10 +642,15 @@ class Wire(Entity):
         if self.wire_load:
             self.wire_load.input_q.put(data)
             try:
-                wireload_output = self.wire_load.output_q.get_nowait()
+                wireload_output = self.wire_load.output_q.get()
+                print("wire fire")
+                # print(wireload_output)
                 await self.output.emit_data_to_input(wireload_output)
             except multiprocessing.queues.Empty:
-                # _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
+                _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
+                pass
+            except queue.Empty:
+                _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
                 pass
 
         elif type(data).__module__ != 'numpy' and data is not None:
@@ -665,17 +676,27 @@ class WireLoadFactory:
         return self._classes.get(wireload_name, None)
 
 
+class ProcessMixin(multiprocessing.Process):
+    input_q = multiprocessing.Queue()
+    output_q = multiprocessing.Queue()
 
-class WireLoad(Entity, multiprocessing.Process):
+
+class ThreadMixin(threading.Thread):
+    input_q = queue.Queue()
+    output_q = queue.Queue()
+
+
+class WireLoad(Entity, ProcessMixin):
     """Wire load abstract class. Mounted on wire, processing data through wire.
         Filter, Analiysis, Process, etc.
     """
     name = ''
-    def __init__(self, init_params={}):
+    def __init__(self, wire, init_params={}):
+        self.wire = wire
         super(WireLoad, self).__init__()
         self.init_params = init_params
-        self.input_q = multiprocessing.Queue()
-        self.output_q = multiprocessing.Queue()
+        # self.input_q = multiprocessing.Queue()
+        # self.output_q = multiprocessing.Queue()
     
     def before_run_setup(self):
         """Need implemented"""
@@ -689,17 +710,23 @@ class WireLoad(Entity, multiprocessing.Process):
     def run(self):
         self.before_run_setup()
         while True:
-            input_data = self.input_q.get(block=True)
-            process_result = self.process(input_data)
-            if process_result is not None:
-                self.output_q.put(process_result)
+            # print("wireload run----")
+            try:
+                input_data = self.input_q.get(block=False)
+                process_result = self.process(input_data)
+                if process_result is not None:
+                    self.output_q.put(process_result)
+            except queue.Empty:
+                time.sleep(0.01)
+                pass
+            except multiprocessing.queues.Empty:
+                time.sleep(0.01)
+                pass
         
     @property
     def output(self):
-        return self.ouput_q
+        return self.output_q
     
- 
-
 
 class Event(object):
     # pylint: disable=too-few-public-methods
@@ -850,7 +877,7 @@ class EventBus(object):
         Returns function to unsubscribe the listener.
         """
         async_remove_listener = run_callback_threadsafe(
-            self.edge.loop, self.asnyc_listen_once, event_type, listener,
+            self.edge.loop, self.async_listen_once, event_type, listener,
         ).result()
 
         def remove_listener() -> None:

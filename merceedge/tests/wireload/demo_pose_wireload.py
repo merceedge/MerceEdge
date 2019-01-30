@@ -13,6 +13,7 @@ from merceedge.tests.detect_object.utils.app_utils import FPS, WebcamVideoStream
 from merceedge.tests.detect_object.object_detection.utils import label_map_util
 from merceedge.core import WireLoad
 
+
 CWD_PATH = os.path.dirname(os.path.realpath(__file__))
 # CWD_PATH = os.getcwd()
 
@@ -64,26 +65,19 @@ def detect_objects(image_np, sess, detection_graph):
     return dict(rect_points=rect_points, class_names=class_names, class_colors=class_colors)
 
 
+
 class PoseWireLoad(WireLoad):
     name = 'pose_wireload'
     
     def __init__(self, init_params={}):
         super(PoseWireLoad, self).__init__(init_params)
 
-        # self.input_q = Queue(5)  # fps is better if queue is higher but then more lags
-        # self.output_q = Queue()
-
+        self.test_num = 0
         self.width = 960
         self.height = 544
 
-        # setup worker thread
-        # self.fps = FPS().start()
-
-        # t = Thread(target=self.worker, args=(self.input_q, self.output_q))
-        # t.daemon = True
-        # t.start()
-
     def before_run_setup(self):
+        
         self.detection_graph = tf.Graph()
         with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
@@ -95,37 +89,17 @@ class PoseWireLoad(WireLoad):
             self.sess = tf.Session(graph=self.detection_graph)
 
         self.fps = FPS().start()
+        
+        pass
 
     def process(self, frame):
         self.fps.update()
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         result = detect_objects(frame_rgb, self.sess, self.detection_graph)
-        print(result)
+        # print(result)
         input_data = frame.tobytes()
         
         buf = bytes(json.dumps(result), encoding = "utf8")
         send = input_data + buf
-        return send
         
-    # def worker(self, input_q, output_q):
-    #     # Load a (frozen) Tensorflow model into memory.
-    #     detection_graph = tf.Graph()
-    #     with detection_graph.as_default():
-    #         od_graph_def = tf.GraphDef()
-    #         with tf.gfile.GFile(PATH_TO_CKPT, 'rb') as fid:
-    #             serialized_graph = fid.read()
-    #             od_graph_def.ParseFromString(serialized_graph)
-    #             tf.import_graph_def(od_graph_def, name='')
-
-    #         sess = tf.Session(graph=detection_graph)
-
-    #     fps = FPS().start()
-    #     while True:
-    #         # print("worker run\n")
-    #         fps.update()
-    #         frame = input_q.get()
-    #         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    #         output_q.put(detect_objects(frame_rgb, sess, detection_graph))
-
-    #     fps.stop()
-    #     sess.close()
+        return send

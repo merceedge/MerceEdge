@@ -129,7 +129,7 @@ class MqttServiceProvider(ServiceProvider):
         """Handle MQTT publish service calls."""
         msg_topic = call.data.get(ATTR_TOPIC)
         payload = call.data.get(ATTR_PAYLOAD)
-        # print("xxxxxxxx")
+        print("xxxxxxxx")
         # print(payload)
 
         payload_template = call.data.get(ATTR_PAYLOAD_TEMPLATE)
@@ -203,4 +203,5 @@ class MqttServiceProvider(ServiceProvider):
                                         input.get_attrs('qos'), 
                                         input.get_attrs('retain'))
         data[ATTR_PAYLOAD] = payload
+        print("emit_input_slot")
         await self.edge.services.async_call(self.DOMAIN, self.SERVICE_PUBLISH, data)
