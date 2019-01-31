@@ -125,14 +125,10 @@ def main():
     ServiceProviderFactory.init(os.path.join(dir_path, user_config['provider_path']), edge, user_config)
     setup_tasks = []
     for name, provider in ServiceProviderFactory.providers.items():
-        print(name)
+        # print(name)
         setup_tasks.append(provider.async_setup(edge, user_config))
     
     edge.loop.run_until_complete(asyncio.wait(setup_tasks))
-    
-    print('start run---')
-    # 2. Read database and restore components / wires
-    # edge.restore_entities_from_db()
 
     # 3. setup api server
     api_server.setup(edge)
@@ -143,7 +139,6 @@ def main():
         edge.loop.run_until_complete(edge.load_formula(formula_path))
 
     # 4. run ...
-    edge.start()
     from merceedge.util.async_util import asyncio_run
     exit_code = asyncio_run(setup_and_run_edge(edge))
     

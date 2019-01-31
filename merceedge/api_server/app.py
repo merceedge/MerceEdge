@@ -34,15 +34,11 @@ REST API:
 
 
 
-def setup(edge, config=None):    
-    print("Flask start setup!")
+def setup(edge, config=None):
     flask_app_thread = threading.Thread(target=app_run, args=(edge, ))
     flask_app_thread.start()
 
    
-    
-
-
 class EdgeFlask(Flask):
     """MerceEdge Flask app class
     """
@@ -50,8 +46,8 @@ class EdgeFlask(Flask):
         super(EdgeFlask, self).__init__(import_name)
         self.edge = edge
 
+
 def app_run(edge):
-    print("Flask run!")
     app = EdgeFlask(edge, __name__)
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
     with app.app_context():

@@ -13,6 +13,8 @@ import datetime
 import multiprocessing
 from time import monotonic
 import time
+import copy
+from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from async_timeout import timeout
 from typing import (  # noqa: F401 pylint: disable=unused-import
@@ -100,8 +102,6 @@ class MerceEdge(object):
         """
         def sender():
             self.loop.run_forever()
-
-       
         # Register the async start
         fire_coroutine_threadsafe(self.async_start(), self.loop)
         t = threading.Thread(target=sender)
@@ -231,7 +231,7 @@ class MerceEdge(object):
         except KeyError:
             _LOGGER.error("Load formula error, program exit!")
             sys.exit(-1)
-
+    
     def add_job(self, target: Callable[..., None], *args: Any) -> None:
         """Add job to the executor pool.
 
@@ -241,7 +241,8 @@ class MerceEdge(object):
         if target is None:
             raise ValueError("Don't call add_job with None")
         self.loop.call_soon_threadsafe(self.async_add_job, target, *args)
-
+    
+    
     @callback
     def async_add_job(
             self,
@@ -260,14 +261,13 @@ class MerceEdge(object):
         check_target = target
         while isinstance(check_target, functools.partial):
             check_target = check_target.func
-        
         if asyncio.iscoroutine(check_target):
             
             task = self.loop.create_task(target)  # type: ignore
         elif is_callback(check_target):
-            
             self.loop.call_soon(target, *args)
         elif asyncio.iscoroutinefunction(check_target):
+            print('iscoroutinefunction {}'.format(check_target.__name__))
             task = self.loop.create_task(target(*args))
         else:
             task = self.loop.run_in_executor(  # type: ignore
@@ -375,7 +375,13 @@ class MerceEdge(object):
         This method is a coroutine.
         """
         _LOGGER.info("Starting Merce Edge")
+
+        def sender():
+            self.loop.run_forever()
+
         # self.state = CoreState.starting
+        t = threading.Thread(target=sender)
+        t.start()
 
         setattr(self.loop, '_thread_ident', threading.get_ident())
         # self.bus.async_fire(EVENT_HOMEASSISTANT_START)
@@ -537,8 +543,14 @@ class Output(Interface):
             2. emit data into input sink
         """
         #TODO self.protocol_provider.output_sink()
+        # print(type(payload))
+        # data = payload
+        # payload = 'test'
         for wire_id, wire in self.output_wires.items():
+            # await wire.fire(payload)
             self.edge.add_job(wire.fire, payload)
+        
+        
         
 
 class Input(Interface):
@@ -633,26 +645,25 @@ class Wire(Entity):
     def disconnect(self):
         self.input.del_wire(self.id)
         self.output.del_wire(self.id)
-            
-    async def fire(self, payload):
+    
+    async def fire(self, data):
         """Fire payload data from input to output"""
         #  send event to eventbus with wire_output_{wireid} event
         # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
-        data = payload
+        # data = payload
         if self.wire_load:
-            self.wire_load.input_q.put(data)
+            self.wire_load.input_q.put(data, block=True)
+            print("-----{}".format(self.wire_load.input_q))
             try:
-                wireload_output = self.wire_load.output_q.get()
                 print("wire fire")
-                # print(wireload_output)
-                await self.output.emit_data_to_input(wireload_output)
+                await self.output.emit_data_to_input(self.wire_load.output_q.get(block=True))
             except multiprocessing.queues.Empty:
                 _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
                 pass
             except queue.Empty:
                 _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
                 pass
-
+               
         elif type(data).__module__ != 'numpy' and data is not None:
             await self.output.emit_data_to_input(data)
     
@@ -680,13 +691,14 @@ class ProcessMixin(multiprocessing.Process):
     input_q = multiprocessing.Queue()
     output_q = multiprocessing.Queue()
 
+    
 
 class ThreadMixin(threading.Thread):
     input_q = queue.Queue()
     output_q = queue.Queue()
 
 
-class WireLoad(Entity, ProcessMixin):
+class WireLoad(Entity, ThreadMixin):
     """Wire load abstract class. Mounted on wire, processing data through wire.
         Filter, Analiysis, Process, etc.
     """
@@ -695,8 +707,7 @@ class WireLoad(Entity, ProcessMixin):
         self.wire = wire
         super(WireLoad, self).__init__()
         self.init_params = init_params
-        # self.input_q = multiprocessing.Queue()
-        # self.output_q = multiprocessing.Queue()
+
     
     def before_run_setup(self):
         """Need implemented"""
@@ -705,23 +716,19 @@ class WireLoad(Entity, ProcessMixin):
     def process(self, input_data):
         """Need implemented"""
         raise NotImplementedError
-    
 
     def run(self):
         self.before_run_setup()
         while True:
-            # print("wireload run----")
             try:
-                input_data = self.input_q.get(block=False)
-                process_result = self.process(input_data)
-                if process_result is not None:
-                    self.output_q.put(process_result)
+                self.output_q.put(self.process(self.input_q.get(block=True)), block=True)
             except queue.Empty:
                 time.sleep(0.01)
                 pass
             except multiprocessing.queues.Empty:
                 time.sleep(0.01)
                 pass
+
         
     @property
     def output(self):
