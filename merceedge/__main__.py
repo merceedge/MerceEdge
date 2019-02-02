@@ -50,43 +50,6 @@ def set_loop() -> None:
         asyncio.set_event_loop_policy(policy)
 
 
-# def run_edge_process(edge_proc):
-#     """ Runs a child hass process. Returns True if it should be restarted.  """
-#     requested_stop = threading.Event()
-#     edge_proc.daemon = True
-
-#     def request_stop(*args):
-#         """ request hass stop, *args is for signal handler callback """
-#         requested_stop.set()
-#         edge_proc.terminate()
-
-#     try:
-#         signal.signal(signal.SIGTERM, request_stop)
-#     except ValueError:
-#         print('Could not bind to SIGTERM. Are you running in a thread?')
-
-#     edge_proc.start()
-#     try:
-#         edge_proc.join()
-#     except KeyboardInterrupt:
-#         request_stop()
-#         try:
-#             edge_proc.join()
-#         except KeyboardInterrupt:
-#             return False
-
-#     return (not requested_stop.isSet() and
-#             edge_proc.exitcode == 100,
-#             edge_proc.exitcode)
-
-
-async def setup_and_run_edge(edge):
-    """
-    Setup Edge and run. Block until stopped. Will assume it is running in a
-    subprocess unless top_process is set to true.
-    """
-    return await edge.async_run()
-
 def main():
     """Start Merce edge
      0. Load local yaml component templates
@@ -127,23 +90,26 @@ def main():
     for name, provider in ServiceProviderFactory.providers.items():
         # print(name)
         setup_tasks.append(provider.async_setup(edge, user_config))
-    
     edge.loop.run_until_complete(asyncio.wait(setup_tasks))
+    
 
     # 3. setup api server
     api_server.setup(edge)
 
     # load formula
+
     if args.formula:
         formula_path = args.formula.strip()
         edge.loop.run_until_complete(edge.load_formula(formula_path))
 
     # 4. run ...
-    from merceedge.util.async_util import asyncio_run
-    exit_code = asyncio_run(setup_and_run_edge(edge))
-    
+    from merceedge.util.signal import async_register_signal_handling
+    async_register_signal_handling(edge)
+
+    exit_code = edge.start()
+
     return exit_code
-
-
+    
 if __name__ == "__main__":
     sys.exit(main())
+

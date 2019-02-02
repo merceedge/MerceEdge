@@ -266,6 +266,7 @@ class ServiceRegistry(object):
                             service_call.domain, service_call.service)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception('Error executing service %s', service_call)
+            
 
     async def _execute_service(self, handler: Service,
                                service_call: ServiceCall) -> None:

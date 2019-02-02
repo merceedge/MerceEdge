@@ -17,6 +17,7 @@ import copy
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from async_timeout import timeout
+from merceedge.util.signal import async_register_signal_handling
 from typing import (  # noqa: F401 pylint: disable=unused-import
     Optional, Any, Callable, List, TypeVar, Dict, Coroutine, Set,
     TYPE_CHECKING, Awaitable, Iterator)
@@ -71,7 +72,7 @@ class MerceEdge(object):
     def __init__(self, user_config):
         self.user_config = user_config
 
-        self.loop = asyncio.new_event_loop()
+        self.loop = asyncio.get_event_loop()
         executor_opts = {'max_workers': None}  # type: Dict[str, Any]
         if sys.version_info[:2] >= (3, 6):
             executor_opts['thread_name_prefix'] = 'SyncWorker'
@@ -81,6 +82,9 @@ class MerceEdge(object):
         self._pending_tasks = []  # type: list
         self._track_task = True
         self.exit_code = 0
+        # _async_stop will set this instead of stopping the loop
+        # self._stopped = asyncio.Event()
+
 
         self.bus = EventBus(self)
         self.services = ServiceRegistry(self)
@@ -89,6 +93,7 @@ class MerceEdge(object):
         self.components = {}  # key: component id
         self.wires = {} # key: wire id
         self.wireload_factory = WireLoadFactory(user_config)
+
         
     def dyload_component(self, component_config):
         """dynamic load new component"""
@@ -100,26 +105,22 @@ class MerceEdge(object):
         Note: This function is only used for testing.
         For regular use, use "await edge.run()".
         """
-        def sender():
-            self.loop.run_forever()
+
         # Register the async start
         fire_coroutine_threadsafe(self.async_start(), self.loop)
-        t = threading.Thread(target=sender)
-        t.start()
+     
         # Run forever
         try:
             # Block until stopped
-            _LOGGER.info("Starting MerceEdge core loop")
-            # self.loop.run_forever()
-            
+            _LOGGER.info("Starting MerceEdge core loop start")
+            self.loop.run_forever()
+      
         finally:
-            # self.loop.close()
-            pass
+            self.loop.close()
         return self.exit_code
 
     def stop(self):
-        # TODO 
-        pass
+        fire_coroutine_threadsafe(self.async_stop(), self.loop)
 
     def load_local_component_templates(self, component_template_path):
         """Read local component templates path, generate component template objects
@@ -175,6 +176,12 @@ class MerceEdge(object):
             return wire
         except KeyError:
             return None
+    
+    def stop_wireload_exec(self):
+        for wireid, wire in self.wires.items():
+            if wire.wire_load:
+                wire.wire_load.is_stop = True
+                
 
     def restore_entities_from_db(self):
         """Restore components / wires from local db when edge start.
@@ -267,7 +274,7 @@ class MerceEdge(object):
         elif is_callback(check_target):
             self.loop.call_soon(target, *args)
         elif asyncio.iscoroutinefunction(check_target):
-            print('iscoroutinefunction {}'.format(check_target.__name__))
+            # print('iscoroutinefunction {}'.format(check_target.__name__))
             task = self.loop.create_task(target(*args))
         else:
             task = self.loop.run_in_executor(  # type: ignore
@@ -275,7 +282,7 @@ class MerceEdge(object):
 
         # If a task is scheduled
         if self._track_task and task is not None:
-            print("5!!!")
+            # print("5!!!")
             self._pending_tasks.append(task)
 
         return task
@@ -343,15 +350,18 @@ class MerceEdge(object):
         """Block till all pending work is done."""
         # To flush out any call_soon_threadsafe
         await asyncio.sleep(0)
-
+        
         while self._pending_tasks:
-            print("async_block_till_done")
+            _LOGGER.debug("async_block_till_done -----")
             pending = [task for task in self._pending_tasks
                        if not task.done()]
             self._pending_tasks.clear()
+            print(pending)
             if pending:
+                _LOGGER.debug('pending')
                 await asyncio.wait(pending)
             else:
+                _LOGGER.debug('no pending')
                 await asyncio.sleep(0)
     
     async def async_run(self) -> int:
@@ -365,8 +375,13 @@ class MerceEdge(object):
         self._stopped = asyncio.Event()
 
         await self.async_start()
-      
+        async_register_signal_handling(self)
+
+        print("self._stopped.wait() start")
+        print(self._stopped)
         await self._stopped.wait()
+        print("self._stopped.wait() stop")
+        
         return self.exit_code
     
     async def async_start(self) -> None:
@@ -374,14 +389,7 @@ class MerceEdge(object):
 
         This method is a coroutine.
         """
-        _LOGGER.info("Starting Merce Edge")
-
-        def sender():
-            self.loop.run_forever()
-
-        # self.state = CoreState.starting
-        t = threading.Thread(target=sender)
-        t.start()
+        # _LOGGER.info("Starting Merce Edge")
 
         setattr(self.loop, '_thread_ident', threading.get_ident())
         # self.bus.async_fire(EVENT_HOMEASSISTANT_START)
@@ -410,7 +418,32 @@ class MerceEdge(object):
         #     return
 
         # self.state = CoreState.running
-        # _async_create_timer(self)
+        _async_create_timer(self)
+
+    async def async_stop(self, exit_code: int = 0, *,
+                         force: bool = False) -> None:
+        """Stop MerceEdge and shuts down all threads.
+
+        The "force" flag commands async_stop to proceed regardless of
+        Home Assistan't current state. You should not set this flag
+        unless you're testing.
+
+        This method is a coroutine.
+        """
+        _LOGGER.debug("Stop all wire load execution...")
+        self.stop_wireload_exec()
+
+        self.async_track_tasks()
+        self.bus.async_fire(EVENT_EDGE_STOP)
+        await self.async_block_till_done()
+ 
+        self.executor.shutdown()
+        
+        _LOGGER.debug('MerceEdge loop stop...')
+        self.loop.stop()
+
+       
+                
 
 
 class Entity(object):
@@ -653,9 +686,9 @@ class Wire(Entity):
         # data = payload
         if self.wire_load:
             self.wire_load.input_q.put(data, block=True)
-            print("-----{}".format(self.wire_load.input_q))
+            # print("-----{}".format(self.wire_load.input_q))
             try:
-                print("wire fire")
+                # print("wire fire")
                 await self.output.emit_data_to_input(self.wire_load.output_q.get(block=True))
             except multiprocessing.queues.Empty:
                 _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
@@ -707,6 +740,7 @@ class WireLoad(Entity, ThreadMixin):
         self.wire = wire
         super(WireLoad, self).__init__()
         self.init_params = init_params
+        self.is_stop = False
 
     
     def before_run_setup(self):
@@ -720,6 +754,9 @@ class WireLoad(Entity, ThreadMixin):
     def run(self):
         self.before_run_setup()
         while True:
+            if self.is_stop:
+                _LOGGER.debug("stop wireload------------")
+                break
             try:
                 self.output_q.put(self.process(self.input_q.get(block=True)), block=True)
             except queue.Empty:

@@ -12,6 +12,9 @@ from merceedge.service import (
 #     Input,
 #     Output
 # )
+from merceedge.const import (
+    EVENT_EDGE_STOP
+)
 from merceedge import util
 from merceedge.util.async_util import (
     Context,
@@ -123,13 +126,30 @@ class MqttServiceProvider(ServiceProvider):
                                           self.async_publish_service,
                                           # description=self.SERVICE_PUBLISH
                                          )
+       
+
+        self.edge.bus.async_listen_once(EVENT_EDGE_STOP, self.async_stop_mqtt)
+
         return True
+
+    async def async_stop_mqtt(self, event):
+        """Stop the MQTT client.
+
+        This method must be run in the event loop and returns a coroutine.
+        """
+        def stop():
+            """Stop the MQTT client."""
+            self._mqttc.disconnect()
+            self._mqttc.loop_stop()
+        print("mqtt provider aborting...")
+        await self.edge.async_add_job(stop)
+        
     
     async def async_publish_service(self, call: ServiceCall):
         """Handle MQTT publish service calls."""
         msg_topic = call.data.get(ATTR_TOPIC)
         payload = call.data.get(ATTR_PAYLOAD)
-        print("xxxxxxxx")
+        # print("xxxxxxxx")
         # print(payload)
 
         payload_template = call.data.get(ATTR_PAYLOAD_TEMPLATE)
@@ -203,5 +223,5 @@ class MqttServiceProvider(ServiceProvider):
                                         input.get_attrs('qos'), 
                                         input.get_attrs('retain'))
         data[ATTR_PAYLOAD] = payload
-        print("emit_input_slot")
+        # print("mqtt emit_input_slot")
         await self.edge.services.async_call(self.DOMAIN, self.SERVICE_PUBLISH, data)
