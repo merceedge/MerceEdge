@@ -8,8 +8,7 @@ wires:
       output: 
         name: rtmp_video_stream
         parameters:
-          - name: rtmp_url
-            value: "rtmp://xxxxx.xx"
+          rtmp_url: "rtmp://xxxxx.xx"
     input_sink: 
       component: mqtt_switch
       input: 

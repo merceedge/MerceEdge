@@ -1,0 +1,143 @@
+
+{
+  "title": "A JSON Schema for MerceEdge Formula",
+  "id": "https://github.com/merceedge/MerceEdge/blob/master/schema/formula_schema.json#",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "required": [
+    "version",
+    "formula",
+    "components",
+    "wires"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": [
+        "1.0"
+      ],
+      "description": "The formula version of this document."
+    },
+    "formula": {
+      "type": "string",
+      "description": "A unique formula name."
+    },
+    "author": {
+      "type": "string",
+      "description": "Author information."
+    },
+    "info": {
+      "type": "string",
+      "description": "Any description about formula."
+    },
+    "components": {
+      "type": "array",
+          "items": {
+            "$ref": "#/definitions/componentDefinitions"
+          },
+          "uniqueItems": true
+    },
+    "wires": {
+      "type": "array",
+          "items": {
+            "$ref": "#/definitions/wireDefinitions"
+          },
+          "uniqueItems": true
+    }
+  },
+
+  "definitions": {
+    "componentDefinitions": {
+      "type": "object",
+      "required": [
+        "template",
+        "name"
+      ],
+      "properties": {
+        "template": {
+          "type": "string",
+          "description": "Component tempalte name"
+        },
+        "name": {
+          "type": "string",
+          "description": "An unique component name at run time."
+        }
+      }
+    },
+    "wireDefinitions": {
+      "type": "object",
+      "required": [
+        "output_slot",
+        "input_sink"
+      ],
+      "properties": {
+        "output_slot": {
+          "type": "object",
+          
+          "properties": {
+            "component":{
+              "type": "string",
+              "description": "Output slot connected component name."
+            },
+            "output": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Output slot connected component output interface name"
+                },
+                "parameters": {
+                  "$ref": "#/definitions/parameter"
+
+                }
+              }
+            }
+          }
+        },
+        "input_sink": {
+          "type": "object",
+          "properties": {
+            "component":{
+              "type": "string",
+              "description": "Input sink connected component name."
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Input sink connected component input interface name"
+                },
+                "parameters": {
+                  "$ref": "#/definitions/parameter"
+                }
+              }
+            }
+          }
+        },
+        "wireload": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Wireload name that wireload module resgister in MerceEdge."
+            },
+            "parameters": {
+              "$ref": "#/definitions/parameter"
+            }
+          }
+        }
+      }
+    },
+    "parameter": {
+      "additionalProperties": true
+    }
+  }
+ 
+}
