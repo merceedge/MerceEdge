@@ -67,57 +67,16 @@
     "wireDefinitions": {
       "type": "object",
       "required": [
-        "output_slot",
-        "input_sink"
+        "pairs"
       ],
       "properties": {
-        "output_slot": {
-          "type": "object",
-          
-          "properties": {
-            "component":{
-              "type": "string",
-              "description": "Output slot connected component name."
-            },
-            "output": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "description": "Output slot connected component output interface name"
-                },
-                "parameters": {
-                  "$ref": "#/definitions/parameter"
-
-                }
-              }
-            }
+        "pairs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/pairDefinitions"
           }
         },
-        "input_sink": {
-          "type": "object",
-          "properties": {
-            "component":{
-              "type": "string",
-              "description": "Input sink connected component name."
-            },
-            "output": {
-              "type": "object",
-              "required": [
-                "name"
-              ],
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "description": "Input sink connected component input interface name"
-                },
-                "parameters": {
-                  "$ref": "#/definitions/parameter"
-                }
-              }
-            }
-          }
-        },
+       
         "wireload": {
           "type": "object",
           "required": [
@@ -137,6 +96,71 @@
     },
     "parameter": {
       "additionalProperties": true
+    }
+  },
+
+  "pairDefinitions": {
+    "type": "object",
+    "properties": {
+      "output_sink": {
+        "type": "object",
+        "properties": {
+          "component":{
+            "type": "string",
+            "description": "Output slot connected component name."
+          },
+          "output": {
+            "type": "object",
+            "required": [
+              "name",
+              "porprety"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Output slot connected component output interface name"
+              },
+              "porprety": {
+                "type": "string",
+                "description": "Connect output interface porprety name"
+              },
+              "parameters": {
+                "$ref": "#/definitions/parameter"
+
+              }
+            }
+          }
+        }
+      },
+      "input_slot": {
+        "type": "object",
+        "properties": {
+          "component":{
+            "type": "string",
+            "description": "Input sink connected component name."
+          },
+          "input": {
+            "type": "object",
+            "required": [
+              "name",
+              "porprety"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Input sink connected component input interface name"
+              },
+              "porprety": {
+                "type": "string",
+                "description": "Connect input interface porprety name"
+              },
+              "parameters": {
+                "$ref": "#/definitions/parameter"
+              }
+            }
+          }
+        }
+      }
     }
   }
  

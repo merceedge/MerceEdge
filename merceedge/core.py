@@ -17,6 +17,7 @@ import copy
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from async_timeout import timeout
+from collections import namedtuple
 from merceedge.util.signal import async_register_signal_handling
 from typing import (  # noqa: F401 pylint: disable=unused-import
     Optional, Any, Callable, List, TypeVar, Dict, Coroutine, Set,
@@ -476,6 +477,7 @@ class Component(Entity):
         self.edge = edge
         self.model_template_config = model_template_config
         self.id = id or id_util.generte_unique_id()
+        self.interface_defs = self.model_template_config.get('defintions') or {}
         self.inputs = {}
         self.outputs = {}
         # self.components = {}
@@ -516,13 +518,15 @@ class Interface(Entity):
     1. Read configuration file and load interface using service(eg: mqtt service).
     2. Listen message from EventBus, or call fire event provide by service(eg: mqtt service).
     """
-    def __init__(self, edge, name, component, protocol, attrs=None):
+    def __init__(self, edge, name, component, 
+                protocol, porpreties, attrs=None):
         self.edge = edge
         self.name = name
         self.component = component
         self.protocol = protocol
+        self.porpreties = porpreties
         self.attrs = attrs or {}
-    
+        
    
 class Output(Interface):
     """Virtual output interface, receive data from real world
@@ -612,7 +616,7 @@ class Input(Interface):
     def _conn_input_slot(self):
         try:
             self.provider = ServiceProviderFactory.get_provider(self.protocol)
-        except KeyError as e:
+        except KeyError:
             # TODO log no such provider key error
             raise
     
@@ -632,12 +636,21 @@ class State(object):
     pass
 
 
+Pair = namedtuple('output_sink', 'input_slot datatype required ready_to_send send_data')
+
+
 class Wire(Entity):
     """Wire """
     def __init__(self, edge, output_sink, input_slot, wireload_name=None, id=None):
         self.edge = edge
         self.id = id or id_util.generte_unique_id()
-        self.input = output_sink
+        """
+        TODO
+        pairs = {output1.proprety1: (input1.proprety1_name, datatype=int8, required=true, ready_to_send=True, send_data=等待发送的数据), 
+                 output2.proprety1: (input1.proprety2_name, datatype=bool, required=false, ready_to_send=False, send_data=None)}
+        """
+        pairs = [] # list of Pair
+        self.input = output_sink # TODO 改为多个
         self.output = input_slot
         self.input.add_wire(self)
         self.output.add_wire(self)
@@ -652,7 +665,13 @@ class Wire(Entity):
         if wireload_name:
             self.wireload_name = wireload_name
             self._create_wireload_object(wireload_name)
-        
+
+    def add_pair(self, output_sink, output_proprety_name, 
+                    input_slot, input_slot_porprety):
+        """TODO 填充 pairs
+        """
+        pass
+
     def __repr__(self):
         wire_info = {}
         wire_info["input"] = {"component_id": self.input.component.id, 
@@ -679,8 +698,14 @@ class Wire(Entity):
         self.input.del_wire(self.id)
         self.output.del_wire(self.id)
     
-    async def fire(self, data):
-        """Fire payload data from input to output"""
+    async def fire(self, output: Output, data: Data):
+        """Fire payload data from input to output
+        TODO 1. Save data with output
+              2. Find data in pairs, 找到要填充的地方，在全部填充满pair数值之前不发送数据
+              3. 发送完成后，pairs的所有ready_to_send重置为False
+              注意：发送前必须按照output的porpreties的顺序打包成相应的数据协议
+              注意： 如果pairs只有一个，并且数据类型一致，则不需要数据协议转换
+        """
         #  send event to eventbus with wire_output_{wireid} event
         # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
         # data = payload

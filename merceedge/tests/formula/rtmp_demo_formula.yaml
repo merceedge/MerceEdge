@@ -2,17 +2,32 @@ version: '1'
 formula: rtmp_demo_formula
 author: Merce Group
 info: This is a rtmp demo formula.
+
+components:
+  - template: rtmp_component
+    name: rtmp_component_test
+  - template: mqtt_switch
+    name: mqtt_switch_test
+
 wires:
-  - output_slot: 
-      component: rtmp_component
-      output: 
-        name: rtmp_video_stream
-        parameters:
-          rtmp_url: "rtmp://xxxxx.xx"
-    input_sink: 
-      component: mqtt_switch
-      input: 
-        name: toggle_input
+  - pairs:
+    - output_sink: 
+        component: rtmp_component_test
+        output: 
+          name: rtmp_video_stream
+          porprety: rtmp
+          parameters: 
+            rtmp_url: 'rtmp://xxx.xxxxx'
+
+      input_slot: 
+        component: mqtt_switch_test
+        input: 
+          name: toggle_input
+          porprety: input
+
+    # - output_sink: ...
+    #   intput_slot: ...
+    
     wireload: 
       name: pose_wireload
       # parameters: TODO
