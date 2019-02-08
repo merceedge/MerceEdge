@@ -14,12 +14,12 @@ wires:
           parameters: 
             rtmp_url: 'rtmp://xxx.xxxxx'
 
-      input_slot: 
-        component_template: mqtt_switch
-        component_id: mqtt_switch_test
-        input: 
-          name: toggle_input
-          porprety: input
+      input_slots: #TODO 改为array
+        - component_template: mqtt_switch
+          component_id: mqtt_switch_test
+          input: 
+            name: toggle_input
+            porprety: input
 
     # - output_sink: ...
     #   intput_slot: ...

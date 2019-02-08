@@ -71,72 +71,84 @@
     },
     "parameter": {
       "additionalProperties": true
-    }
-  },
-
-  "pairDefinitions": {
-    "type": "object",
-    "properties": {
-      "output_sink": {
-        "type": "object",
-        "properties": {
-          "component":{
-            "type": "string",
-            "description": "Output slot connected component name."
-          },
-          "output": {
-            "type": "object",
-            "required": [
-              "name",
-              "porprety"
-            ],
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Output slot connected component output interface name"
-              },
-              "porprety": {
-                "type": "string",
-                "description": "Connect output interface porprety name"
-              },
-              "parameters": {
-                "$ref": "#/definitions/parameter"
-
+    },
+    "pairDefinitions": {
+      "type": "object",
+      "properties": {
+        "output_sink": {
+          "type": "object",
+          "properties": {
+            "component_template":{
+              "type": "string",
+              "description": "Output slot connected component template name."
+            },
+            "component_id":{
+              "type": "string",
+              "description": "Output slot connected component id."
+            },
+            "output": {
+              "type": "object",
+              "required": [
+                "name",
+                "porprety"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Output slot connected component output interface name"
+                },
+                "porprety": {
+                  "type": "string",
+                  "description": "Connect output interface porprety name"
+                },
+                "parameters": {
+                  "$ref": "#/definitions/parameter"
+  
+                }
               }
             }
           }
+        },
+        "input_slots": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/inputSlotDefinitions"
+          }
         }
-      },
-      "input_slot": {
-        "type": "object",
-        "properties": {
-          "component":{
-            "type": "string",
-            "description": "Input sink connected component name."
-          },
-          "input": {
-            "type": "object",
-            "required": [
-              "name",
-              "porprety"
-            ],
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Input sink connected component input interface name"
-              },
-              "porprety": {
-                "type": "string",
-                "description": "Connect input interface porprety name"
-              },
-              "parameters": {
-                "$ref": "#/definitions/parameter"
-              }
+      }
+    },
+    "inputSlotDefinitions": {
+      "type": "object",
+      "properties": {
+        "component_template":{
+          "type": "string",
+          "description": "Input sink connected component template name."
+        },
+        "component_id":{
+          "type": "string",
+          "description": "Input sink connected component id."
+        },
+        "input": {
+          "type": "object",
+          "required": [
+            "name",
+            "porprety"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Input sink connected component input interface name"
+            },
+            "porprety": {
+              "type": "string",
+              "description": "Connect input interface porprety name"
+            },
+            "parameters": {
+              "$ref": "#/definitions/parameter"
             }
           }
         }
       }
     }
   }
- 
 }
