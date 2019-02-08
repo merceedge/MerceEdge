@@ -37,3 +37,13 @@ class ServiceNotFound(MerceEdgeError):
             self, "Service {}.{} not found".format(domain, service))
         self.domain = domain
         self.service = service
+
+
+class ComponentTemplateNotFound(MerceEdgeError):
+    """Raised when a component template is not found."""
+
+    def __init__(self, component_template: str) -> None:
+        """Initialize error."""
+        super().__init__(
+            self, "Component template {} not found".format(component_template))
+        self.component_template = component_template

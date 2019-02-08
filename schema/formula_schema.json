@@ -7,7 +7,6 @@
   "required": [
     "version",
     "formula",
-    "components",
     "wires"
   ],
   "properties": {
@@ -30,13 +29,6 @@
       "type": "string",
       "description": "Any description about formula."
     },
-    "components": {
-      "type": "array",
-          "items": {
-            "$ref": "#/definitions/componentDefinitions"
-          },
-          "uniqueItems": true
-    },
     "wires": {
       "type": "array",
           "items": {
@@ -47,23 +39,6 @@
   },
 
   "definitions": {
-    "componentDefinitions": {
-      "type": "object",
-      "required": [
-        "template",
-        "name"
-      ],
-      "properties": {
-        "template": {
-          "type": "string",
-          "description": "Component tempalte name"
-        },
-        "name": {
-          "type": "string",
-          "description": "An unique component name at run time."
-        }
-      }
-    },
     "wireDefinitions": {
       "type": "object",
       "required": [
