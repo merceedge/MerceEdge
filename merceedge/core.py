@@ -595,6 +595,7 @@ class Output(Interface):
         # print(type(payload))
         # data = payload
         # payload = 'test'
+        # TODO 根据Ouput schema 对payload数据进行解包
         for wire_id, wire in self.output_wires.items():
             # await wire.fire(payload)
             self.edge.add_job(wire.fire, payload)
@@ -647,10 +648,10 @@ class State(object):
     # TODO
     pass
 
+InputSlot = namedtuple('InputSlot', 'input_slot_name input_slot_params datatype required')
 
 Pair = namedtuple('Pair', 'output_sink_params \
-                            input_slot input_slot_params \
-                            datatype required ready_to_send send_data')
+                            input_slots ready_to_send send_data')
 
 
 class Wire(Entity):
@@ -660,7 +661,12 @@ class Wire(Entity):
         self.id = id or id_util.generte_unique_id()
         """
         pairs = 
-        {component1.output1.proprety1: (component2.input1.proprety1, datatype=int8, required=true, params={}, ready_to_send=True, send_data=等待发送的数据), 
+        {component1.output1.proprety1: 
+            {
+                (component2.input1.proprety1, datatype=int8, required=true, params={}), 
+                ...
+            },
+            ready_to_send=True, send_data="wait to send data"), 
          component1.output2.proprety1: (component2.input1.proprety2, datatype=bool, required=false, params={}, ready_to_send=False,  send_data=None)}
         """
         self.pairs = {} # map of Pair
@@ -681,37 +687,56 @@ class Wire(Entity):
             # construct components
             output_com = self.edge.get_component_instance(pair['output_sink']['component_template'], 
                                                         pair['output_sink']['component_id'] )
-            input_com = self.edge.get_component_instance(pair['input_slot']['component_template'], 
-                                                        pair['input_slot']['component_id'] )
+            
             # construct wire pair
+            # output sink
             output_yml_node = pair['output_sink']['output']
-            input_yml_node = pair['input_slot']['input']
+
             # interface name: "{component_id.output_name.proprety_name}"
             output_sink_name = "{}.{}.{}".format(output_com.id,
                                                     output_yml_node['name'], 
                                                 output_yml_node['porprety'])
-            input_slot_name = "{}.{}.{}".format(input_com.id, 
-                                                input_yml_node['name'], 
-                                                input_yml_node['porprety'])
-            datatype, required = input_com.get_interface_porprety_info(interface_type='inputs', 
-                                                                        interface_name=input_yml_node['name'], 
-                                                                        property_name=input_yml_node['porprety'])
             # interface parameters
             output_sink_params = output_yml_node.get('parameters', {})
-            input_slot_params = input_yml_node.get('parameters', {})
+
+            # add input (output_sink) objects
+            self._add_input(output_com.outputs[output_yml_node['name']])
+
+
+            # input slots
+            input_slot_nodes = pair['input_slots']
+            input_slots = set()
+            for input_slot_node in input_slot_nodes:
+                # interface name: "{component_id.output_name.proprety_name}"
+                input_com = self.edge.get_component_instance(input_slot_node['component_template'], 
+                                                             input_slot_node['component_id'] )
+                input_yml_node = input_slot_node['input']
+                input_slot_name = "{}.{}.{}".format(input_com.id, 
+                                                input_yml_node['name'], 
+                                                input_yml_node['porprety'])
+
+                datatype, required = input_com.get_interface_porprety_info(interface_type='inputs', 
+                                                                        interface_name=input_yml_node['name'], 
+                                                                        property_name=input_yml_node['porprety'])
+                # interface parameters
+                input_slot_params = input_yml_node.get('parameters', {})
+
+                # add ouput (intput_slot) objects
+                self._add_output(input_com.inputs[input_yml_node['name']])
+
+                # TODO connect input slot ?
+
+                new_input_slot = InputSlot(input_slot_name=input_slot_name,
+                                            input_slot_params=input_slot_params, 
+                                            datatype=datatype, required=required)
+                input_slots.add(new_input_slot)
 
             self._add_pair(output_sink_name, output_sink_params, 
-                          input_slot_name, input_slot_params, 
-                          datatype, required=required)
-
-            # add input & ouput objects
-            self._add_input(output_com.outputs[output_yml_node['name']])
-            self._add_output(input_com.inputs[input_yml_node['name']])
+                            input_slots)
 
             # connect output sink
             await output_com.conn_output_sink(output_wire_params=output_sink_params)
-            # TODO connect input slot ?
-        
+                
         # setup wireload
         # filter/AI/custom module, etc...
         wireload = self.wire_node.get('wireload', None)
@@ -731,15 +756,11 @@ class Wire(Entity):
             input_slot.add_wire(self)
 
     def _add_pair(self, output_sink_name, output_sink_params,
-                    input_slot_name, input_slot_params,
-                    datatype, required=True):
+                    input_slots):
         """TODO fill up pairs
         """
         new_pair = Pair(output_sink_params=output_sink_params,
-                        input_slot=input_slot_name, 
-                        input_slot_params=input_slot_params,
-                        datatype=datatype,
-                        required=required,
+                        input_slots=input_slots,
                         ready_to_send=False,
                         send_data=None
                     )
@@ -784,6 +805,7 @@ class Wire(Entity):
               注意：发送前必须按照output的porpreties的顺序打包成相应的数据协议
               注意： 如果pairs只有一个，并且数据类型一致，则不需要数据协议转换
         """
+        
         #  send event to eventbus with wire_output_{wireid} event
         # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
         # data = payload
