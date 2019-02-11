@@ -53,4 +53,6 @@ class RTMPProvider(ServiceProvider):
     async def conn_output_sink(self, output, output_wire_params, callback):       
         rtmp_id = output.id
         rtmp_url = output.get_attrs('rtmp_url')
+        print(('- rtmp_id', rtmp_id))
+        print(('- rtmp_url', rtmp_url))
         self._new_rtmp_client(rtmp_id, rtmp_url, output_wire_params, callback)

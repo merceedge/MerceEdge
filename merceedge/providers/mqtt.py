@@ -105,6 +105,7 @@ class MqttServiceProvider(ServiceProvider):
         # self._mqttc.on_connect = self._mqtt_on_connect
         # self._mqttc.on_disconnect = self._mqtt_on_disconnect
         self._mqttc.on_message = self._mqtt_on_message
+        self._mqttc.on_publish  = self.on_publish 
 
         result = await self.edge.async_add_job(
                     self._mqttc.connect, broker, port, keepalive
@@ -152,10 +153,15 @@ class MqttServiceProvider(ServiceProvider):
         if msg_topic is None or payload is None:
             return
         
+        # self._mqttc.publish(msg_topic, payload, qos, retain)
+        # print('-- publish: %s' % msg_topic)
         async with self._paho_lock:
+            print('---- async_add_job: %s' % msg_topic)
             _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
             await self.edge.async_add_job(
-                self._mqttc.publish, msg_topic, payload, qos, retain) 
+                self._mqttc.publish, msg_topic, payload, qos, retain)
+            print('---- async_add_job2: %s' % msg_topic)
+        print('---- async_add_job done ----:')
         
         
 
@@ -167,6 +173,9 @@ class MqttServiceProvider(ServiceProvider):
         if retain is not None:
             data[ATTR_RETAIN] = retain
         return data
+
+    def on_publish(client, obj, mid):
+        print("mqtt publish: " + str(mid))
 
     def _mqtt_on_message(self, _mqttc, _userdata, msg):
         # TODO need fix this proto code

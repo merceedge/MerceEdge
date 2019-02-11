@@ -102,4 +102,4 @@ class PoseWireLoad(WireLoad):
         buf = bytes(json.dumps(result), encoding = "utf8")
         send = input_data + buf
         
-        return send
+        return buf

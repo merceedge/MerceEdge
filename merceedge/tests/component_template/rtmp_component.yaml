@@ -8,7 +8,8 @@ component:
         name: rtmp
         # rtmp_url: "rtmp://change_your_rtmp_path_here"
         # rtmp_url: "/local_path/test_video.mp4"
-        rtmp_url: "/Users/hobo/Desktop/1548309591973109.mp4"
+        # rtmp_url: "/Users/hobo/Desktop/1548309591973109.mp4"
+        rtmp_url: "/home/merceedge/SampleVideo_720x480_30mb.mp4"
         code: h.264
 
   description: RTMP video stream component.

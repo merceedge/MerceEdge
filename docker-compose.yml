@@ -1,0 +1,36 @@
+version: '3'
+services:
+  mosquitto:
+    hostname: mosquitto
+    image: eclipse-mosquitto
+    container_name: mosquitto_container
+    # environment:
+    expose:
+      - "1883"
+      - "9001"
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+
+  merceedge:
+    depends_on:
+      - mosquitto
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: merceedge_image
+#    restart: always
+    container_name: merceedge_container
+    # docker run -it --rm -v c:/Users/Gang/workspace/pin_tuan:/pin_tuan -p 8080:8080 xxxx
+    volumes:
+      - /home/docker/merceedge:/home/merceedge
+    environment:
+      PYTHONPATH: /home/merceedge
+      MERCE_EDGE_HOME: /home/merceedge
+#    expose:
+#      - 8080
+    # ports:
+    #   - "8080:8080"
+    command: /bin/bash
+    stdin_open: true
+    tty: true

@@ -4,38 +4,40 @@ import json
 import cv2
 import numpy as np
 import time
-from merceedge.tests.detect_object.utils.app_utils import FPS
+# from merceedge.tests.detect_object.utils.app_utils import FPS
+from app_utils import FPS
 
-broker = '127.0.0.1'
+broker = 'mosquitto' #'127.0.0.1'
 port = 1883
 keepalive = False
-width=960
-height=544
+width=720
+height=480
 
 
 
 input_q = Queue()  # fps is better if queue is higher but then more lags
 
 def _mqtt_on_message(_mqttc, _userdata, msg):
-    print(len(msg.payload))
-    input_q.put(msg.payload)    
+    print(msg.payload)
+    # input_q.put(msg.payload)    
 
 
 _mqttc = mqtt.Client(protocol=mqtt.MQTTv31)
 _mqttc.on_message = _mqtt_on_message
 _mqttc.connect(broker, port, keepalive)
-_mqttc.loop_start()
+# _mqttc.loop_start()
 
 
 
 def main():
     _mqttc.subscribe('/mercedge/toggle_switch', 0)
+    _mqttc.loop_forever()
     # fps = FPS().start()
     while True:
 
         t = time.time()
         if input_q.empty():
-            print("input empty")
+            # print("input empty")
             # time.sleep(0.5)
             pass
         else:

@@ -74,7 +74,7 @@ class MerceEdge(object):
         if sys.version_info[:2] >= (3, 6):
             executor_opts['thread_name_prefix'] = 'SyncWorker'
         self.executor = ThreadPoolExecutor(**executor_opts)
-        self.loop.set_default_executor(self.executor)
+        # self.loop.set_default_executor(self.executor)
 
         self._pending_tasks = []  # type: list
         self._track_task = True
@@ -152,6 +152,11 @@ class MerceEdge(object):
                                 wire_id=None, wireload_name=None):
         """ connenct wire
         """
+        print(('output_name', output_name))
+        print(('input_name', input_name))
+        print(('output_params', output_params))
+        print(('input_params', input_params))
+        print(('wireload_name', wireload_name))
         wire = Wire(edge=self, 
                     output_sink=self.components[output_component_id].outputs[output_name], 
                     input_slot=self.components[input_component_id].inputs[input_name], 
@@ -260,18 +265,24 @@ class MerceEdge(object):
         check_target = target
         while isinstance(check_target, functools.partial):
             check_target = check_target.func
+            print('! isinstance %s' % (isinstance(check_target, functools.partial)))
         
         if asyncio.iscoroutine(check_target):
             
             task = self.loop.create_task(target)  # type: ignore
+            print('! iscoroutine %s' % asyncio.iscoroutine(check_target))
         elif is_callback(check_target):
             
             self.loop.call_soon(target, *args)
+            print('! is_callback %s' % is_callback(check_target))
         elif asyncio.iscoroutinefunction(check_target):
             task = self.loop.create_task(target(*args))
+            # print('! iscoroutinefunction %s' % asyncio.iscoroutinefunction(check_target))
         else:
             task = self.loop.run_in_executor(  # type: ignore
-                None, target, *args)
+                self.executor, target, *args)
+            print('! other')
+            print('self._track_task %s' % self._track_task)
 
         # If a task is scheduled
         if self._track_task and task is not None:
@@ -315,8 +326,9 @@ class MerceEdge(object):
             target: Callable[..., T],
             *args: Any) -> Awaitable[T]:
         """Add an executor job from within the event loop."""
+        print('run_in_executor')
         task = self.loop.run_in_executor(
-            None, target, *args)
+            self.executor, target, *args)
 
         # If a task is scheduled
         if self._track_task:
@@ -346,11 +358,14 @@ class MerceEdge(object):
 
         while self._pending_tasks:
             print("async_block_till_done")
+            print("cnt: %d" % len(self._pending_tasks))
             pending = [task for task in self._pending_tasks
                        if not task.done()]
+            print("cnt2: %d" % len(pending))
             self._pending_tasks.clear()
             if pending:
                 await asyncio.wait(pending)
+                print('! wait done')
             else:
                 await asyncio.sleep(0)
     
@@ -620,6 +635,7 @@ class Wire(Entity):
         wireload_class = self.edge.wireload_factory.get_class(wireload_name)
         if wireload_class:
             self.wire_load = wireload_class(self)
+            print(' --- %s' % self.wire_load)
             # start process 
             # TODO Maybe need wait MerceEdge start?
             self.wire_load.start()
@@ -643,7 +659,7 @@ class Wire(Entity):
             self.wire_load.input_q.put(data)
             try:
                 wireload_output = self.wire_load.output_q.get()
-                print("wire fire")
+                # print("wire fire: %s" % wireload_output)
                 # print(wireload_output)
                 await self.output.emit_data_to_input(wireload_output)
             except multiprocessing.queues.Empty:
