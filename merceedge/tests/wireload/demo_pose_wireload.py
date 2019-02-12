@@ -67,7 +67,7 @@ def detect_objects(image_np, sess, detection_graph):
 
 
 class PoseWireLoad(WireLoad):
-    name = 'pose_wireload'
+    name = 'object_detection'
     
     def __init__(self, init_params={}):
         super(PoseWireLoad, self).__init__(init_params)

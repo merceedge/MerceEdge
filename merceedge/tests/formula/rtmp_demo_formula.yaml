@@ -3,30 +3,33 @@ formula: rtmp_demo_formula
 author: Merce Group
 info: This is a rtmp demo formula.
 
-wires:
-  - pairs:
-    - output_sink: 
-        component_template: rtmp_component
-        component_id: rtmp_component_test
-        output: 
-          name: rtmp_video_stream
-          porprety: rtmp
-          parameters: 
-            rtmp_url: 'rtmp://xxx.xxxxx'
-
-      input_slots: #TODO 改为array
-        - component_template: mqtt_switch
-          component_id: mqtt_switch_test
-          input: 
-            name: toggle_input
-            porprety: input
-
-    # - output_sink: ...
-    #   intput_slot: ...
+components:
+  - tempalte: rtmp_component
+    id: rtmp_component_test
+   
+  - template: object_detection
+    id: object_detection_test
     
-    wireload: 
-      name: pose_wireload
-      # parameters: TODO
+  - template: mqtt_switch
+    id: mqtt_switch_test
+
+wires:
+  - output_sink: 
+      component_id: rtmp_component_test
+      output: rtmp_video_stream
+      parameters: 
+        rtmp_url: 'rtmp://xxx.xxxxx'
+    input_slot:
+      component_id: object_detection_test
+      input: rtmp
+  
+  - output_sink: 
+      component_id: object_detection_test
+      output: object_detection_result
+    input_slot:
+      component_id: mqtt_switch_test
+      input: toggle_input
+    
         
   
 

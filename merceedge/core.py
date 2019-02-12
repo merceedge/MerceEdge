@@ -23,7 +23,6 @@ from collections import namedtuple
 from typing import (  # noqa: F401 pylint: disable=unused-import
     Optional, Any, Callable, List, TypeVar, Dict, Coroutine, Set,
     TYPE_CHECKING, Awaitable, Iterator)
-import queue
 from os.path import join
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -139,7 +138,7 @@ class MerceEdge(object):
             self.component_templates[com_tmp_yaml['component']['name']] = com_tmp_yaml
             
 
-    def generate_component_instance(self, component_template_name, id=None):
+    def _generate_component_instance(self, component_template_name, id=None):
         """Deepcopy component from component template
         """
         com_tmp_yaml = self.component_templates.get(component_template_name, None)
@@ -151,17 +150,36 @@ class MerceEdge(object):
             # TODO logger warn no such  name component compnent
             pass
         return None
+    
+    def generate_component_instance(self, component_template_name, component_id) -> Component:
+        """ Get component from self.components dict by id, if not exit, create new one, and 
+            save into self.components
+        """
+        component = self.components.get(component_id, None)
+        if component is None:
+            component = self._generate_component_instance(component_template_name, component_id)
+            if component:
+                return component
+        raise ComponentTemplateNotFound
 
-    async def connect_interface(self, wire_node, wire_id=None):
+    async def connect_interface(self, 
+                                output_component_id, output_name, 
+                                input_component_id, input_name, 
+                                output_params={}, input_params={},
+                                wire_id=None):
         """ connenct wire
         """
-        wire = Wire(edge=self, wire_node=wire_node, id=wire_id)
+        output_sink = self.components[output_component_id].outputs[output_name]
+        input_slot = self.components[input_component_id].inputs[input_name]
+        wire = Wire(edge=self, output_sink=output_sink, input_slot=input_slot, id=wire_id)
+        wire.set_input_params(output_params)
+        wire.set_output_params(input_params)
         self.wires[wire.id] = wire
         
-        await wire.setup()
+        await self.components[output_component_id].outputs[output_name].conn_output_sink(output_wire_params=output_params)
+        await self.components[input_component_id].inputs[input_name].conn_input_slot()
         return wire
 
-    
     def delete_wire(self, wire_id):
         """Disconnect wire
         """
@@ -187,7 +205,7 @@ class MerceEdge(object):
         # Restruct components
         component_db_list = ComponentDBModel.query.all()
         for component_db_record in component_db_list:
-            self.generate_component_instance(component_db_record.template_name, 
+            self._generate_component_instance(component_db_record.template_name, 
                                                             component_db_record.uuid)
         # Restruct wires
         wire_db_list = WireDBModel.query.all()
@@ -206,27 +224,37 @@ class MerceEdge(object):
                 # TODO logger warn
                 continue
 
-    def get_component_instance(self, component_template_name, component_id) -> Component:
-        """ Get component from self.components dict by id, if not exit, create new one, and 
-            save into self.components
-        """
-        component = self.components.get(component_id, None)
-        if component is None:
-            component = self.generate_component_instance(component_template_name, component_id)
-            if component:
-                return component
-
-        raise ComponentTemplateNotFound
-
     async def load_formula(self, formula_path):
         formula_yaml = yaml_util.load_yaml(formula_path)
-        wires = formula_yaml['wires']
+        
         try:
+            components = formula_yaml['components']
+            wires = formula_yaml['wires']
+            for component in components:
+                # TODO init component parameters
+                self.generate_component_instance(component['template'], component['id'])
+
             for wire in wires:
-                await self.connect_interface(wire_node=wire)
+                # struct components
+                output_com = self.components[wire['output_sink']['component_id']]
+                input_com = self.components[wire['input_slot']['component_id']]
+                # struct wire
+                output_name = wire['output_sink']['output']
+                input_name = wire['input_slot']['input']
+
+                # wire interface paramaters
+                output_params = wire['output_sink'].get('parameters', {})
+                input_params = wire['input_slot'].get('parameters', {})
+                
+                await self.connect_interface(output_com.id, output_name,
+                                        input_com.id, input_name,
+                                        output_params, input_params)
+                
         except KeyError:
             _LOGGER.error("Load formula error, program exit!")
             sys.exit(-1)
+        except ComponentTemplateNotFound:
+            _LOGGER.error(ComponentTemplateNotFound.__str__)
     
     def add_job(self, target: Callable[..., None], *args: Any) -> None:
         """Add job to the executor pool.
@@ -462,7 +490,6 @@ class Component(Entity):
         self.edge = edge
         self.model_template_config = model_template_config
         self.id = id or id_util.generte_unique_id()
-        self.interface_defs = self.model_template_config.get('defintions') or {}
         self.inputs = {}
         self.outputs = {}
         # self.components = {}
@@ -476,12 +503,20 @@ class Component(Entity):
         inputs = self.model_template_config['component'].get('inputs', None)
         if inputs:
             for _input in inputs:
-                self.inputs[_input['name']] = Input(self.edge, _input['name'], self, _input['protocol']['name'], _input['protocol'])
+                self.inputs[_input['name']] = Input(edge=self.edge, 
+                                                    name=_input['name'], 
+                                                    component=self, 
+                                                    attrs=_input['protocol'],
+                                                    propreties=_input.get('propreties', None))
         
         outputs = self.model_template_config['component'].get('outputs', None)
         if outputs:
             for _ouput in outputs:
-                self.outputs[_ouput['name']] = Output(self.edge, _ouput['name'], self, _ouput['protocol']['name'], _ouput['protocol'])   
+                self.outputs[_ouput['name']] = Output(edge=self.edge,
+                                                      name=_ouput['name'],
+                                                      component=self,
+                                                      attrs=_ouput['protocol'],
+                                                      propreties=_input.get('propreties', None))   
 
     def get_start_wires_info(self):
         """ Get wires infomation that start from component
@@ -493,37 +528,6 @@ class Component(Entity):
                 pass
         return wires
     
-    def get_interface_porprety_info(self, interface_type: str, interface_name: str, property_name: str):
-        """Get component interface info from component template. 
-            type: 'outputs' or 'inputs'
-            interface_name: interface name
-            return: set (datatype, required)
-        """
-        if interface_type not in ('outputs', 'inputs'):
-            raise MerceEdgeError
-
-        interfaces_yml_node = self.model_template_config[interface_type]
-        # get interface 
-        interface = None
-        for _interface in interfaces_yml_node:
-            if _interface['name'] == interface_name:
-                interface = _interface
-                break
-        # get property
-        property = None
-        for _property in interface['properties']:
-            if _property['name'] == property_name:
-                property = _property
-                break
-        #return (datatype, required)
-        return property['type'], property.get('required') or True
-
-        
-        
-
-
-
-    
 
 class Interface(Entity):
     """Interface ABC 
@@ -531,20 +535,24 @@ class Interface(Entity):
     2. Listen message from EventBus, or call fire event provide by service(eg: mqtt service).
     """
     def __init__(self, edge, name, component, 
-                protocol, porpreties, attrs=None):
+                 attrs=None, propreties=None):
         self.edge = edge
         self.name = name
         self.component = component
-        self.protocol = protocol
-        self.porpreties = porpreties
+        # self.protocol = protocol
+        self.propreties = propreties or {}
         self.attrs = attrs or {}
+        self._set_protocol()
+    
+    def _set_protocol(self):
+        self.protocol = self.attrs.get('name', 'virtual_interface')
         
    
 class Output(Interface):
     """Virtual output interface, receive data from real world
     """
-    def __init__(self, edge, name, component, protocol, attrs):
-        super(Output, self).__init__(edge, name, component, protocol, attrs)
+    def __init__(self, edge, name, component, attrs=None, propreties=None):
+        super(Output, self).__init__(edge, name, component, attrs, propreties)
         self.output_wires = {}
         self.data = {}
 
@@ -584,9 +592,9 @@ class Output(Interface):
         """ register EventBus listener"""
         await self.provider.conn_output_sink(output=self, 
                                        output_wire_params=output_wire_params,
-                                       callback=self._output_sink_callback)
+                                       callback=self.output_sink_callback)
     
-    def _output_sink_callback(self, payload):
+    def output_sink_callback(self, payload):
         """Emit data to all wires
             1. get all wire input_sink
             2. emit data into input sink
@@ -599,17 +607,19 @@ class Output(Interface):
         for wire_id, wire in self.output_wires.items():
             # await wire.fire(payload)
             self.edge.add_job(wire.fire, payload)
-        
-        
+    # TODO 循环wire.fire需要修改成发送wirefire Event（连线的时候Wire的Output需要注册Input的wirefire事件）
+    # async def emit_output_payload(self, payload):
+    #     """Send output Event"""
+    #     event_type = "{}_{}".format(self.component.id, self.name)
+    #     self.edge.bus.async_fire(event_type, payload)
         
 
 class Input(Interface):
     """Input"""
-    def __init__(self, edge, name, component, protocol, attrs):
-        super(Input, self).__init__(edge, name, component, protocol, attrs)
-        # self.component = component
+    def __init__(self, edge, name, component, attrs=None, propreties=None):
+        super(Input, self).__init__(edge, name, component, attrs, propreties)
         self.input_wires = {}
-        self._conn_input_slot()
+        self._init_provider()
     
     def wires_info(self):
         info = {}
@@ -626,13 +636,19 @@ class Input(Interface):
         """
         del self.input_wires[wire_id]
         
-    def _conn_input_slot(self):
+    def _init_provider(self):
         try:
             self.provider = ServiceProviderFactory.get_provider(self.protocol)
         except KeyError:
             # TODO log no such provider key error
             raise
-    
+
+    async def conn_input_slot(self):
+        await self.provider.conn_input_slot(self)
+
+    # async def input_slot_callback(self, payload):
+    #     await self.provider.emit_input_slot(self, payload)
+
     async def emit_data_to_input(self, payload):
         # Emit data to EventBus and invoke configuration service send data function.
         # TODO payload根据wire类型进行转换
@@ -648,142 +664,49 @@ class State(object):
     # TODO
     pass
 
-InputSlot = namedtuple('InputSlot', 'input_slot_name input_slot_params datatype required')
-
-Pair = namedtuple('Pair', 'output_sink_params \
-                            input_slots ready_to_send send_data')
-
 
 class Wire(Entity):
     """Wire """
-    def __init__(self, edge: MerceEdge, wire_node, id=None):
+    def __init__(self, edge: MerceEdge, output_sink: Input, input_slot: Output, id=None):
         self.edge = edge
         self.id = id or id_util.generte_unique_id()
-        """
-        pairs = 
-        {component1.output1.proprety1: 
-            {
-                (component2.input1.proprety1, datatype=int8, required=true, params={}), 
-                ...
-            },
-            ready_to_send=True, send_data="wait to send data"), 
-         component1.output2.proprety1: (component2.input1.proprety2, datatype=bool, required=false, params={}, ready_to_send=False,  send_data=None)}
-        """
-        self.pairs = {} # map of Pair
-        self.inputs = []
-        self.outputs = []
+        self.input = output_sink
+        self.output = input_slot
         self.input_params = dict()
         self.output_params = dict()
-        self.wire_load = None
-        self.wire_node = wire_node
 
-        # #setup
-        # self.setup(wire_node)
-
-    async def setup(self):
-        """ Setup wire from formula yml wire node
-        """
-        for pair in self.wire_node['pairs']:
-            # construct components
-            output_com = self.edge.get_component_instance(pair['output_sink']['component_template'], 
-                                                        pair['output_sink']['component_id'] )
-            
-            # construct wire pair
-            # output sink
-            output_yml_node = pair['output_sink']['output']
-
-            # interface name: "{component_id.output_name.proprety_name}"
-            output_sink_name = "{}.{}.{}".format(output_com.id,
-                                                    output_yml_node['name'], 
-                                                output_yml_node['porprety'])
-            # interface parameters
-            output_sink_params = output_yml_node.get('parameters', {})
-
-            # add input (output_sink) objects
-            self._add_input(output_com.outputs[output_yml_node['name']])
-
-
-            # input slots
-            input_slot_nodes = pair['input_slots']
-            input_slots = set()
-            for input_slot_node in input_slot_nodes:
-                # interface name: "{component_id.output_name.proprety_name}"
-                input_com = self.edge.get_component_instance(input_slot_node['component_template'], 
-                                                             input_slot_node['component_id'] )
-                input_yml_node = input_slot_node['input']
-                input_slot_name = "{}.{}.{}".format(input_com.id, 
-                                                input_yml_node['name'], 
-                                                input_yml_node['porprety'])
-
-                datatype, required = input_com.get_interface_porprety_info(interface_type='inputs', 
-                                                                        interface_name=input_yml_node['name'], 
-                                                                        property_name=input_yml_node['porprety'])
-                # interface parameters
-                input_slot_params = input_yml_node.get('parameters', {})
-
-                # add ouput (intput_slot) objects
-                self._add_output(input_com.inputs[input_yml_node['name']])
-
-                # TODO connect input slot ?
-
-                new_input_slot = InputSlot(input_slot_name=input_slot_name,
-                                            input_slot_params=input_slot_params, 
-                                            datatype=datatype, required=required)
-                input_slots.add(new_input_slot)
-
-            self._add_pair(output_sink_name, output_sink_params, 
-                            input_slots)
-
-            # connect output sink
-            await output_com.conn_output_sink(output_wire_params=output_sink_params)
-                
-        # setup wireload
-        # filter/AI/custom module, etc...
-        wireload = self.wire_node.get('wireload', None)
-        if wireload:
-            if wireload.get('name'):
-                self.wireload_name = wireload.get('name')
-                self._create_wireload_object(self.wireload_name)
-
+        self.input.add_wire(self)
+        self.output.add_wire(self)
+          
     def _add_input(self, output_sink: Output):
-        if output_sink not in self.inputs:
-            self.inputs.append(output_sink)
-            output_sink.add_wire(self)
+        output_sink.add_wire(self)
     
     def _add_output(self, input_slot: Input):
-        if input_slot not in self.outputs:
-            self.outputs.append(input_slot)
-            input_slot.add_wire(self)
-
-    def _add_pair(self, output_sink_name, output_sink_params,
-                    input_slots):
-        """TODO fill up pairs
-        """
-        new_pair = Pair(output_sink_params=output_sink_params,
-                        input_slots=input_slots,
-                        ready_to_send=False,
-                        send_data=None
-                    )
-        self.pairs[output_sink_name] = new_pair
+        input_slot.add_wire(self)
+    
+    @property
+    def output_sink(self):
+        return self.input
+    
+    @property
+    def input_slot(self):
+        return self.output
 
     def __repr__(self):
         wire_info = {}
-        wire_info["paris"] = ''
-        for key, pair_obj in self.pairs.items():
-            for pair_key, pair_value in pair_obj._asdict().items():
-                pair_info = "{}: {}\n".format(pair_key, pair_value)
-                wire_info["paris"] += pair_info
-            wire_info["paris"]=  wire_info["paris"] + "-"*20 + "\n"
-        wire_info["wireload"] = self.wire_load
-        return wire_info    
+        wire_info["input"] = {"component_id": self.input.component.id, 
+                            "name": self.input.name}
+        wire_info["output"] = {"component_id": self.output.component.id,
+                            "name": self.output.name}
+        return wire_info      
     
-    def _create_wireload_object(self, wireload_name):
-        wireload_class = self.edge.wireload_factory.get_class(wireload_name)
-        if wireload_class:
-            self.wire_load = wireload_class(self)
-            # start process 
-            # TODO Maybe need wait MerceEdge start?
-            self.wire_load.start()
+    # def _create_wireload_object(self, wireload_name):
+    #     wireload_class = self.edge.wireload_factory.get_class(wireload_name)
+    #     if wireload_class:
+    #         self.wire_load = wireload_class(self)
+    #         # start process 
+    #         # TODO Maybe need wait MerceEdge start?
+    #         self.wire_load.start()
 
     def set_input_params(self, parameters):
         self.input_params = parameters
@@ -792,38 +715,16 @@ class Wire(Entity):
         self.output_params = parameters
 
     def disconnect(self):
-        for _input in self.inputs:
-            _input.del_wire(self.id)
-        for _output in self.outputs:
-            _output.del_wire(self.id)
+        self.input.del_wire(self.id)
+        self.output.del_wire(self.id)
     
-    async def fire(self, output: Output, data: Data):
+    async def fire(self, data):
         """Fire payload data from input to output
-        TODO 1. Save data with output
-              2. Find data in pairs, 找到要填充的地方，在全部填充满pair数值之前不发送数据
-              3. 发送完成后，pairs的所有ready_to_send重置为False
-              注意：发送前必须按照output的porpreties的顺序打包成相应的数据协议
-              注意： 如果pairs只有一个，并且数据类型一致，则不需要数据协议转换
         """
-        
         #  send event to eventbus with wire_output_{wireid} event
         # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
         # data = payload
-        if self.wire_load:
-            self.wire_load.input_q.put(data, block=True)
-            # print("-----{}".format(self.wire_load.input_q))
-            try:
-                # print("wire fire")
-                await self.output.emit_data_to_input(self.wire_load.output_q.get(block=True))
-            except multiprocessing.queues.Empty:
-                _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
-                pass
-            except queue.Empty:
-                _LOGGER.info("wireload [{}] output is empty".format(self.wireload_name))
-                pass
-               
-        elif type(data).__module__ != 'numpy' and data is not None:
-            await self.output.emit_data_to_input(data)
+        await self.output.emit_data_to_input(data)
     
 
 class WireLoadFactory:
@@ -845,55 +746,65 @@ class WireLoadFactory:
         return self._classes.get(wireload_name, None)
 
 
-class ProcessMixin(multiprocessing.Process):
-    input_q = multiprocessing.Queue()
-    output_q = multiprocessing.Queue()
-
-    
-
-class ThreadMixin(threading.Thread):
-    input_q = queue.Queue()
-    output_q = queue.Queue()
+# class ProcessMixin(multiprocessing.Process):
+#     input_q = multiprocessing.Queue()
+#     output_q = multiprocessing.Queue()
 
 
-class WireLoad(Entity, ThreadMixin):
+# class ThreadMixin(threading.Thread):
+#     input_q = queue.Queue()
+#     output_q = queue.Queue()
+
+
+
+
+class WireLoad(Component):
     """Wire load abstract class. Mounted on wire, processing data through wire.
         Filter, Analiysis, Process, etc.
     """
     name = ''
-    def __init__(self, wire, init_params={}):
-        self.wire = wire
-        super(WireLoad, self).__init__()
+    input_q = asyncio.Queue()
+    output_q = asyncio.Queue()
+
+    def __init__(self, edge, model_template_config, component_id=None, init_params={}):
+        super(WireLoad, self).__init__(edge, model_template_config, id=id)
         self.init_params = init_params
         self.is_stop = False
 
-    
     def before_run_setup(self):
         """Need implemented"""
         raise NotImplementedError
 
-    def process(self, input_data):
+    async def put_payload(self, payload):
+        await self.input_q.put(payload)
+        self.edge.add_job(self.run)
+
+    def process(self, input_payload):
         """Need implemented"""
         raise NotImplementedError
 
-    def run(self):
-        self.before_run_setup()
+    async def run(self):
         while True:
             if self.is_stop:
                 _LOGGER.debug("stop wireload------------")
                 break
-            try:
-                self.output_q.put(self.process(self.input_q.get(block=True)), block=True)
-            except queue.Empty:
-                time.sleep(0.01)
-                pass
-            except multiprocessing.queues.Empty:
-                time.sleep(0.01)
-                pass
+            input_payload = await self.input_q.get()
+            if input_payload:
+                result = self.process(input_payload)
+                if result:
+                    await self.output_q.put(result)
+                    self.edge.add_job(self.emit_output_payload)
 
-    @property
-    def output(self):
-        return self.output_q
+    async def emit_output_payload(self):
+        pass
+        output_payload = await self.output_q.get()
+        for name, output in self.outputs.items():
+            await output.emit_output_payload(output_payload)
+
+            
+    # @property
+    # def output(self):
+    #     return self.output_q
     
 
 class Event(object):

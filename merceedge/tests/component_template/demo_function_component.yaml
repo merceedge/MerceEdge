@@ -1,0 +1,30 @@
+version: '1'
+component:
+  name: object_detection
+  vendor: Merce project group
+  virtual: true
+
+  inputs:
+    - name: rtmp
+      protocol:
+        name: virtual
+
+  outputs: 
+    - name: object_detection_result
+      protocol:
+        name: virtual
+      propreties:
+        result: json
+    - name: rtmp_bytes
+      protocol:
+        name: virtual
+      propreties:
+        rtmp: bytes
+    - name: rtmp_video_size
+      protocol:
+        name: virtual
+      propreties:
+        height: int
+        width: int
+
+  description: Object detection component.

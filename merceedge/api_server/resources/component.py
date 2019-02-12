@@ -58,7 +58,7 @@ class ComponentList(Resource):
         """
         args = component_parser.parse_args()
         # with self._lock:
-        new_component = current_app.edge.generate_component_instance(args['template_name'])
+        new_component = current_app.edge._generate_component_instance(args['template_name'])
         new_db_component = ComponentDBModel(uuid=new_component.id,
                                                     template_name=args['template_name'])
 

@@ -5,21 +5,10 @@ component:
   outputs: 
     - name: toggle_output
       protocol: 
-          name: mqtt
-          type: binary # or json, protobuf, object
-          topic: /mercedge/toggle_button
-          qos: 0
-          retain: false
-          data_schema_type: merceedge # or swaager, protobuf
-          porpreties:
-            output: # proprety name is output
-              type: boolean
-              description: toggle output intferface boolean proprety.
-            
-            # schema_test_output:
-            #   schema:
-            #     $ref: "#/definitions/Output"
-        
+        name: mqtt
+        topic: /mercedge/toggle_button
+        qos: 0
+        retain: false
   # defintions:
 
   description: mqtt demo toggle button component.
