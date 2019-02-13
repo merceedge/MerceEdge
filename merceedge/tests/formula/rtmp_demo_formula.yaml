@@ -10,8 +10,8 @@ components:
   - template: object_detection
     id: object_detection_test
     
-  - template: mqtt_switch
-    id: mqtt_switch_test
+  - template: object_detector_ui
+    id: object_detector_ui_test
 
 wires:
   - output_sink: 
@@ -27,8 +27,22 @@ wires:
       component_id: object_detection_test
       output: object_detection_result
     input_slot:
-      component_id: mqtt_switch_test
-      input: toggle_input
+      component_id: object_detector_ui_test
+      input: object_detection_result
+
+  - output_sink: 
+      component_id: object_detection_test
+      output: rtmp_bytes
+    input_slot:
+      component_id: object_detector_ui_test
+      input: rtmp_bytes
+  
+  - output_sink: 
+      component_id: object_detection_test
+      output: rtmp_video_size
+    input_slot:
+      component_id: object_detector_ui_test
+      input: rtmp_video_size
     
         
   

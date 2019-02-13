@@ -8,21 +8,21 @@ component:
     - name: rtmp
       protocol:
         name: virtual
+      type: object
 
   outputs: 
     - name: object_detection_result
       protocol:
         name: virtual
-      propreties:
-        result: json
+      type: json
     - name: rtmp_bytes
       protocol:
         name: virtual
-      propreties:
-        rtmp: bytes
+      type: bytes
     - name: rtmp_video_size
       protocol:
         name: virtual
+      type: json
       propreties:
         height: int
         width: int

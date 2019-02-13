@@ -182,6 +182,7 @@ class MerceEdge(object):
         
         await self.components[output_component_id].outputs[output_name].conn_output_sink(output_wire_params=output_params)
         await self.components[input_component_id].inputs[input_name].conn_input_slot()
+        wire.connect()
         return wire
 
     def delete_wire(self, wire_id):
@@ -610,9 +611,15 @@ class Output(Interface):
         # data = payload
         # payload = 'test'
         # TODO 根据Ouput schema 对payload数据进行解包
-        for wire_id, wire in self.output_wires.items():
-            # await wire.fire(payload)
-            self.edge.add_job(wire.fire, payload)
+        # for wire_id, wire in self.output_wires.items():
+        #     # await wire.fire(payload)
+        #     self.edge.add_job(wire.fire, payload)
+        """Send output Event"""
+        wirefire_event_type = "wirefire_{}_{}".format(self.component.id, self.name)
+        self.edge.bus.fire(wirefire_event_type, payload)
+
+
+
     # TODO 循环wire.fire需要修改成发送wirefire Event（连线的时候Wire的Output需要注册Input的wirefire事件）
     # async def emit_output_payload(self, payload):
     #     """Send output Event"""
@@ -661,7 +668,8 @@ class Input(Interface):
         # print("emit_data_to_input:")
         # print(type(payload))
         # print(payload.data)
-        await self.provider.emit_input_slot(self, payload)
+
+        await self.provider.emit_input_slot(self, payload.data)
 
 
 class State(object):
@@ -673,7 +681,7 @@ class State(object):
 
 class Wire(Entity):
     """Wire """
-    def __init__(self, edge: MerceEdge, output_sink: Input, input_slot: Output, id=None):
+    def __init__(self, edge: MerceEdge, output_sink: Output, input_slot: Input, id=None):
         self.edge = edge
         self.id = id or id_util.generte_unique_id()
         self.input = output_sink
@@ -683,6 +691,12 @@ class Wire(Entity):
 
         self.input.add_wire(self)
         self.output.add_wire(self)
+    
+    def connect(self):
+        outcom_id = self.output_sink.component.id
+        out_name = self.output_sink.name
+        wirefire_event_type = "wirefire_{}_{}".format(outcom_id, out_name)
+        self.edge.bus.async_listen(wirefire_event_type, self.input_slot.emit_data_to_input)
           
     def _add_input(self, output_sink: Output):
         output_sink.add_wire(self)
@@ -724,13 +738,13 @@ class Wire(Entity):
         self.input.del_wire(self.id)
         self.output.del_wire(self.id)
     
-    async def fire(self, data):
-        """Fire payload data from input to output
-        """
-        #  send event to eventbus with wire_output_{wireid} event
-        # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
-        # data = payload
-        await self.output.emit_data_to_input(data)
+    # async def fire(self, data):
+    #     """Fire payload data from input to output
+    #     """
+    #     #  send event to eventbus with wire_output_{wireid} event
+    #     # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
+    #     # data = payload
+    #     await self.output.emit_data_to_input(data)
     
 
 class WireLoadFactory:
@@ -782,9 +796,13 @@ class WireLoad(Component):
         """Need implemented"""
         raise NotImplementedError
 
-    async def put_payload(self, payload):
+    async def put_input_payload(self, payload):
         await self.input_q.put(payload)
         self.edge.add_job(self.run)
+    
+    async def put_output_payload(self, output_name, payload):
+        await self.output_q.put((output_name, payload))
+        self.edge.add_job(self.emit_output_payload)
 
     def process(self, input_payload):
         """Need implemented"""
@@ -797,17 +815,22 @@ class WireLoad(Component):
                 break
             input_payload = await self.input_q.get()
             # if input_payload:
-            result = self.process(input_payload)
-            if result:
-                await self.output_q.put(result)
-                self.edge.add_job(self.emit_output_payload)
+            await self.process(input_payload)
+            
+            # if result:
+            #     await self.output_q.put(result)
+            #     self.edge.add_job(self.emit_output_payload)
 
     async def emit_output_payload(self):
-        pass
         output_payload = await self.output_q.get()
-        if output_payload:
-            for name, output in self.outputs.items():
-                output.output_sink_callback(output_payload)
+        try:
+            if output_payload:
+                self.outputs[output_payload[0]].output_sink_callback(output_payload[1])
+        except KeyError as e:
+            _LOGGER.warn("Cannot find output: {}".format(e))
+        # if output_payload:
+        #     for name, output in self.outputs.items():
+        #         output.output_sink_callback(output_payload)
 
             
     # @property
@@ -826,7 +849,8 @@ class Event(object):
                  context: Optional[Context] = None) -> None:
         """Initialize a new event."""
         self.event_type = event_type
-        self.data = data or {}
+        # TODO 
+        self.data = data
         self.time_fired = time_fired or dt_util.utcnow()
         self.context = context or Context()
 
@@ -887,7 +911,6 @@ class EventBus(object):
     def fire(self, event_type: str, event_data: Optional[Dict] = None,
              context: Optional[Context] = None) -> None:
         """Fire an event."""
-        print(self.edge.loop)
         self.edge.loop.call_soon_threadsafe(
             self.async_fire, event_type, event_data, context)
     

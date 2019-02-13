@@ -48,7 +48,7 @@ class RTMPProvider(ServiceProvider):
             # self.edge.bus.fire("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
             #                     data)
             # TODO Send frame to process queue
-            time.sleep(0.1)
+            time.sleep(0.07)
             callback(frame)
             
 

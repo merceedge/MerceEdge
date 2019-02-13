@@ -78,7 +78,6 @@ class PoseWireLoad(WireLoad):
         self.before_run_setup()
 
     def before_run_setup(self):
-        
         self.detection_graph = tf.Graph()
         with self.detection_graph.as_default():
             od_graph_def = tf.GraphDef()
@@ -93,15 +92,16 @@ class PoseWireLoad(WireLoad):
         
         pass
 
-    def process(self, frame):
+    async def process(self, frame):
+        await self.put_output_payload(output_name='rtmp_video_size', 
+                                      payload={'height': self.height, 'width': self.width})
         self.fps.update()
+        # print(type(frame))
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         result = detect_objects(frame_rgb, self.sess, self.detection_graph)
         # print(result)
-        input_data = frame.tobytes()
-        
-        buf = bytes(json.dumps(result), encoding = "utf8")
-        send = input_data + buf
+        await self.put_output_payload(output_name='rtmp_bytes', payload=frame.tobytes())
+        await self.put_output_payload(output_name='object_detection_result', payload=result)
 
-        return send
+
 

@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import json
 from merceedge.providers.base import (
     ServiceProvider,
     Singleton
@@ -179,13 +180,16 @@ class MqttServiceProvider(ServiceProvider):
         
         
 
-    def _build_publish_data(self, topic, qos, retain):
+    def _build_publish_data(self, topic, qos, retain, payload=None):
         """Build the arguments for the publish service without the payload."""
         data = {ATTR_TOPIC: topic}
         if qos is not None:
             data[ATTR_QOS] = qos
         if retain is not None:
             data[ATTR_RETAIN] = retain
+        if type(payload) in (list, dict):
+            payload = json.dumps(payload)
+        data[ATTR_PAYLOAD] = payload
         return data
 
     def _mqtt_on_message(self, _mqttc, _userdata, msg):
@@ -221,7 +225,8 @@ class MqttServiceProvider(ServiceProvider):
         """Publish message to an MQTT topic."""
         data = self._build_publish_data(input.get_attrs('topic'),
                                         input.get_attrs('qos'), 
-                                        input.get_attrs('retain'))
-        data[ATTR_PAYLOAD] = payload
+                                        input.get_attrs('retain'),
+                                        payload)
+        
         # print("mqtt emit_input_slot")
         await self.edge.services.async_call(self.DOMAIN, self.SERVICE_PUBLISH, data)
