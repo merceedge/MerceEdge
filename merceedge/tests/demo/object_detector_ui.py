@@ -16,25 +16,16 @@ input_q = Queue()  # fps is better if queue is higher but then more lags
 
 def _mqtt_on_message(_mqttc, _userdata, msg):
     global width, height
-    # print("-"*30)
-    # print(len(msg.payload))
-    # print(msg.topic)
+
     if msg.topic == u'/mercedge/rtmp_video_size':
-        # print("-"*30)
-        # print(len(msg.payload), type(msg.payload))
-        # print(msg.topic)
         size = json.loads(msg.payload.decode('utf-8'))
-        # print(size)
         width = size['width']
         height = size['height']
-        # print(msg.payload, width, height)
 
     elif msg.topic == u'/mercedge/rtmp_bytes':
-
         input_q.put(('rtmp_bytes', msg.payload))
 
     elif msg.topic == u'/mercedge/object_detection_result':
-        # print("-"*30)
         input_q.put(('object_detection_result', msg.payload))
     
 _mqttc = mqtt.Client(protocol=mqtt.MQTTv31)
@@ -55,13 +46,12 @@ def main():
         if width == 0 or height == 0:
             # print('waiting video size parameters', width, height)
             continue
+        
 
         if input_q.empty():
-            # print("input empty")
             pass
         else:
             payload = input_q.get()
-            # print(msg)
             global frame
             
             if payload[0] == 'rtmp_bytes':
@@ -72,7 +62,6 @@ def main():
             elif payload[0] == 'object_detection_result':
                 
                 object_detection_result = json.loads(payload[1].decode('utf-8'))
-                # print(object_detection_result, frame)
                 if frame is None:
                     continue
                 

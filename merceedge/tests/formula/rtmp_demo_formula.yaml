@@ -1,7 +1,8 @@
 version: '1'
 formula: rtmp_demo_formula
 author: Merce Group
-info: This is a rtmp demo formula.
+info: This is a rtmp demo output link object detection formula. |
+       rtmp --> object_detecion --> mqtt(object_detector_ui)
 
 components:
   - template: rtmp_component

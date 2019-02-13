@@ -19,7 +19,6 @@ from concurrent.futures import ThreadPoolExecutor
 from async_timeout import timeout
 from collections import namedtuple
 
-
 from typing import (  # noqa: F401 pylint: disable=unused-import
     Optional, Any, Callable, List, TypeVar, Dict, Coroutine, Set,
     TYPE_CHECKING, Awaitable, Iterator)
@@ -546,7 +545,6 @@ class Interface(Entity):
         self.edge = edge
         self.name = name
         self.component = component
-        # self.protocol = protocol
         self.propreties = propreties or {}
         self.attrs = attrs or {}
         self._set_protocol()
@@ -602,30 +600,11 @@ class Output(Interface):
                                        callback=self.output_sink_callback)
     
     def output_sink_callback(self, payload):
-        """Emit data to all wires
-            1. get all wire input_sink
-            2. emit data into input sink
-        """
-        #TODO self.protocol_provider.output_sink()
-        # print(type(payload))
-        # data = payload
-        # payload = 'test'
-        # TODO 根据Ouput schema 对payload数据进行解包
-        # for wire_id, wire in self.output_wires.items():
-        #     # await wire.fire(payload)
-        #     self.edge.add_job(wire.fire, payload)
         """Send output Event"""
+        # 发送wirefire Event（连线的时候Wire的Output需要注册Input的wirefire事件）
         wirefire_event_type = "wirefire_{}_{}".format(self.component.id, self.name)
         self.edge.bus.fire(wirefire_event_type, payload)
 
-
-
-    # TODO 循环wire.fire需要修改成发送wirefire Event（连线的时候Wire的Output需要注册Input的wirefire事件）
-    # async def emit_output_payload(self, payload):
-    #     """Send output Event"""
-    #     event_type = "{}_{}".format(self.component.id, self.name)
-    #     self.edge.bus.async_fire(event_type, payload)
-        
 
 class Input(Interface):
     """Input"""
@@ -659,16 +638,8 @@ class Input(Interface):
     async def conn_input_slot(self):
         await self.provider.conn_input_slot(self)
 
-    # async def input_slot_callback(self, payload):
-    #     await self.provider.emit_input_slot(self, payload)
-
     async def emit_data_to_input(self, payload):
         # Emit data to EventBus and invoke configuration service send data function.
-        # TODO payload根据wire类型进行转换
-        # print("emit_data_to_input:")
-        # print(type(payload))
-        # print(payload.data)
-
         await self.provider.emit_input_slot(self, payload.data)
 
 
@@ -720,14 +691,6 @@ class Wire(Entity):
                             "name": self.output.name}
         return wire_info      
     
-    # def _create_wireload_object(self, wireload_name):
-    #     wireload_class = self.edge.wireload_factory.get_class(wireload_name)
-    #     if wireload_class:
-    #         self.wire_load = wireload_class(self)
-    #         # start process 
-    #         # TODO Maybe need wait MerceEdge start?
-    #         self.wire_load.start()
-
     def set_input_params(self, parameters):
         self.input_params = parameters
 
@@ -737,15 +700,6 @@ class Wire(Entity):
     def disconnect(self):
         self.input.del_wire(self.id)
         self.output.del_wire(self.id)
-    
-    # async def fire(self, data):
-    #     """Fire payload data from input to output
-    #     """
-    #     #  send event to eventbus with wire_output_{wireid} event
-    #     # self.edge.bus.fire("wire_ouput_{}".format(self.id), payload)
-    #     # data = payload
-    #     await self.output.emit_data_to_input(data)
-    
 
 class WireLoadFactory:
     def __init__(self, config):
@@ -766,18 +720,6 @@ class WireLoadFactory:
         return self._classes.get(wireload_name, None)
 
 
-# class ProcessMixin(multiprocessing.Process):
-#     input_q = multiprocessing.Queue()
-#     output_q = multiprocessing.Queue()
-
-
-# class ThreadMixin(threading.Thread):
-#     input_q = queue.Queue()
-#     output_q = queue.Queue()
-
-
-
-
 class WireLoad(Component):
     """Wire load abstract class. Mounted on wire, processing data through wire.
         Filter, Analiysis, Process, etc.
@@ -787,8 +729,8 @@ class WireLoad(Component):
 
     def __init__(self, edge, model_template_config, component_id=None, init_params={}):
         super(WireLoad, self).__init__(edge, model_template_config, id=component_id)
-        self.input_q = asyncio.Queue(loop=self.edge.loop)
-        self.output_q = asyncio.Queue(loop=self.edge.loop)
+        self.input_q = asyncio.Queue(maxsize=3, loop=self.edge.loop)
+        self.output_q = asyncio.Queue(maxsize=3, loop=self.edge.loop)
         self.init_params = init_params
         self.is_stop = False
 
@@ -799,7 +741,7 @@ class WireLoad(Component):
     async def put_input_payload(self, payload):
         await self.input_q.put(payload)
         self.edge.add_job(self.run)
-    
+        
     async def put_output_payload(self, output_name, payload):
         await self.output_q.put((output_name, payload))
         self.edge.add_job(self.emit_output_payload)
@@ -814,8 +756,9 @@ class WireLoad(Component):
                 _LOGGER.debug("stop wireload------------")
                 break
             input_payload = await self.input_q.get()
-            # if input_payload:
+            
             await self.process(input_payload)
+            del input_payload
             
             # if result:
             #     await self.output_q.put(result)
@@ -828,16 +771,8 @@ class WireLoad(Component):
                 self.outputs[output_payload[0]].output_sink_callback(output_payload[1])
         except KeyError as e:
             _LOGGER.warn("Cannot find output: {}".format(e))
-        # if output_payload:
-        #     for name, output in self.outputs.items():
-        #         output.output_sink_callback(output_payload)
 
-            
-    # @property
-    # def output(self):
-    #     return self.output_q
     
-
 class Event(object):
     # pylint: disable=too-few-public-methods
     """Represents an event within the Bus."""
@@ -1083,5 +1018,3 @@ def _async_create_timer(edge: MerceEdge) -> None:
 
     _LOGGER.info("Timer:starting")
     schedule_tick(dt_util.utcnow())
-
-

@@ -39,16 +39,8 @@ class RTMPProvider(ServiceProvider):
             # of the stream
             if not grabbed:
                 break
-            # send frame event on eventbus
-            # TODO send shape info
-            # print(frame.shape)
-            # data = frame.tobytes()
-            # print("len: {}".format(len(data)))
-
-            # self.edge.bus.fire("{}_{}".format(self.RTMP_FRAME_EVENT, rtmp_id),
-            #                     data)
-            # TODO Send frame to process queue
-            time.sleep(0.07)
+            
+            time.sleep(0.08)
             callback(frame)
             
 

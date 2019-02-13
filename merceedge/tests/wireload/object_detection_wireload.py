@@ -66,15 +66,15 @@ def detect_objects(image_np, sess, detection_graph):
 
 
 
-class PoseWireLoad(WireLoad):
+class ObjectDetectionWireLoad(WireLoad):
     name = 'object_detection'
     
     def __init__(self, edge, model_template_config, component_id=None, init_params={}):
-        super(PoseWireLoad, self).__init__(edge, model_template_config, component_id, init_params)
+        super(ObjectDetectionWireLoad, self).__init__(edge, model_template_config, component_id, init_params)
 
         self.test_num = 0
-        self.width = 960
-        self.height = 544
+        self.width = 0
+        self.height = 0
         self.before_run_setup()
 
     def before_run_setup(self):
@@ -93,6 +93,7 @@ class PoseWireLoad(WireLoad):
         pass
 
     async def process(self, frame):
+        self.height, self.width = frame.shape[0], frame.shape[1]
         await self.put_output_payload(output_name='rtmp_video_size', 
                                       payload={'height': self.height, 'width': self.width})
         self.fps.update()
