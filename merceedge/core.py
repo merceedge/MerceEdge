@@ -143,7 +143,11 @@ class MerceEdge(object):
         """
         com_tmp_yaml = self.component_templates.get(component_template_name, None)
         if com_tmp_yaml:
-            new_com = Component(self, com_tmp_yaml, id)
+            if com_tmp_yaml['component'].get('virtual', False):
+                new_com_cls = self.wireload_factory.get_class(com_tmp_yaml['component']['name'])
+                new_com = new_com_cls(self, com_tmp_yaml, id)
+            else:
+                new_com = Component(self, com_tmp_yaml, id)
             self.components[new_com.id] = new_com
             return new_com
         else:
@@ -151,7 +155,7 @@ class MerceEdge(object):
             pass
         return None
     
-    def generate_component_instance(self, component_template_name, component_id) -> Component:
+    def generate_component_instance(self, component_template_name, component_id):
         """ Get component from self.components dict by id, if not exit, create new one, and 
             save into self.components
         """
@@ -192,9 +196,11 @@ class MerceEdge(object):
             return None
     
     def stop_wireload_exec(self):
-        for wireid, wire in self.wires.items():
-            if wire.wire_load:
-                wire.wire_load.is_stop = True
+        # for wireid, wire in self.wires.items():
+        #     if wire.wire_load:
+        #         wire.wire_load.is_stop = True
+        # TODO
+        pass
                 
     def restore_entities_from_db(self):
         """Restore components / wires from local db when edge start.
@@ -250,8 +256,8 @@ class MerceEdge(object):
                                         input_com.id, input_name,
                                         output_params, input_params)
                 
-        except KeyError:
-            _LOGGER.error("Load formula error, program exit!")
+        except KeyError as e:
+            _LOGGER.error("Load formula error, program exit!: {}".format(e))
             sys.exit(-1)
         except ComponentTemplateNotFound:
             _LOGGER.error(ComponentTemplateNotFound.__str__)
@@ -511,12 +517,12 @@ class Component(Entity):
         
         outputs = self.model_template_config['component'].get('outputs', None)
         if outputs:
-            for _ouput in outputs:
-                self.outputs[_ouput['name']] = Output(edge=self.edge,
-                                                      name=_ouput['name'],
+            for _output in outputs:
+                self.outputs[_output['name']] = Output(edge=self.edge,
+                                                      name=_output['name'],
                                                       component=self,
-                                                      attrs=_ouput['protocol'],
-                                                      propreties=_input.get('propreties', None))   
+                                                      attrs=_output['protocol'],
+                                                      propreties=_output.get('propreties', None))   
 
     def get_start_wires_info(self):
         """ Get wires infomation that start from component
@@ -763,11 +769,12 @@ class WireLoad(Component):
         Filter, Analiysis, Process, etc.
     """
     name = ''
-    input_q = asyncio.Queue()
-    output_q = asyncio.Queue()
+
 
     def __init__(self, edge, model_template_config, component_id=None, init_params={}):
-        super(WireLoad, self).__init__(edge, model_template_config, id=id)
+        super(WireLoad, self).__init__(edge, model_template_config, id=component_id)
+        self.input_q = asyncio.Queue(loop=self.edge.loop)
+        self.output_q = asyncio.Queue(loop=self.edge.loop)
         self.init_params = init_params
         self.is_stop = False
 
@@ -789,17 +796,18 @@ class WireLoad(Component):
                 _LOGGER.debug("stop wireload------------")
                 break
             input_payload = await self.input_q.get()
-            if input_payload:
-                result = self.process(input_payload)
-                if result:
-                    await self.output_q.put(result)
-                    self.edge.add_job(self.emit_output_payload)
+            # if input_payload:
+            result = self.process(input_payload)
+            if result:
+                await self.output_q.put(result)
+                self.edge.add_job(self.emit_output_payload)
 
     async def emit_output_payload(self):
         pass
         output_payload = await self.output_q.get()
-        for name, output in self.outputs.items():
-            await output.emit_output_payload(output_payload)
+        if output_payload:
+            for name, output in self.outputs.items():
+                output.output_sink_callback(output_payload)
 
             
     # @property

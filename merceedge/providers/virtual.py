@@ -27,7 +27,7 @@ class VirtualInterfaceProvider(ServiceProvider):
         """connect input interface on wire input slot """
         # 注册输入（Input）组件监听的输出事件类型（输出组件id_输出接口名称），监听者为虚拟组件聚合的Input对象callback函数
         input_slot_wires = input.input_wires
-        for wire in input_slot_wires:
+        for wire_id, wire in input_slot_wires.items():
             outcom_id = wire.output_sink.component.id
             out_name = wire.output_sink.name
             event_type = "{}_{}".format(outcom_id, out_name)

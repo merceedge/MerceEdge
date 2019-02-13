@@ -69,12 +69,13 @@ def detect_objects(image_np, sess, detection_graph):
 class PoseWireLoad(WireLoad):
     name = 'object_detection'
     
-    def __init__(self, init_params={}):
-        super(PoseWireLoad, self).__init__(init_params)
+    def __init__(self, edge, model_template_config, component_id=None, init_params={}):
+        super(PoseWireLoad, self).__init__(edge, model_template_config, component_id, init_params)
 
         self.test_num = 0
         self.width = 960
         self.height = 544
+        self.before_run_setup()
 
     def before_run_setup(self):
         

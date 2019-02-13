@@ -31,7 +31,7 @@ class ServiceProvider(Singleton):
 
     async def conn_input_slot(self, input):
         """connect input interface on wire input slot """
-        raise NotImplementedError
+        pass
     
     async def emit_input_slot(self, input, payload):
         """send data to input slot"""

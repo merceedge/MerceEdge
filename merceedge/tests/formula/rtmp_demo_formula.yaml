@@ -4,7 +4,7 @@ author: Merce Group
 info: This is a rtmp demo formula.
 
 components:
-  - tempalte: rtmp_component
+  - template: rtmp_component
     id: rtmp_component_test
    
   - template: object_detection
