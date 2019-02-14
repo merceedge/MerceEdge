@@ -92,9 +92,9 @@ MerceEdge可以：
 
   可以看到输出显示结果
   
- </a>
+</a>
 <p align="center">
-    <img src="https://merceedge.oss-cn-hongkong.aliyuncs.com/object_detection_demo_record.gif", width="360">
+    <img src="https://github.com/merceedge/resources/blob/master/object_detection_demo_record.gif?raw=true", width="360px">
 </p>
 
 ### 从docker运行(TODO)
