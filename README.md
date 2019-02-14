@@ -90,8 +90,10 @@ Open another terminal window, and also use the MerceEdge virtualenv set up earli
     (MerceEdge)  MerceEdge # cd merceedge/tests/demo 
     (MerceEdge)  demo # python object_detector_ui.py
 
-
- ![object detector](https://merceedge.oss-cn-hongkong.aliyuncs.com/object_detection_demo_record.gif)
+</a>
+<p align="center">
+    <img src="https://merceedge.oss-cn-hongkong.aliyuncs.com/object_detection_demo_record.gif", width="360">
+</p>
 
 ### Run from docker (TODO)
 

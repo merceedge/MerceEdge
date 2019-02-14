@@ -92,8 +92,10 @@ MerceEdge可以：
 
   可以看到输出显示结果
   
-  ![object detector](https://merceedge.oss-cn-hongkong.aliyuncs.com/object_detection_demo_record.gif)
-
+ </a>
+<p align="center">
+    <img src="https://merceedge.oss-cn-hongkong.aliyuncs.com/object_detection_demo_record.gif", width="360">
+</p>
 
 ### 从docker运行(TODO)
 
