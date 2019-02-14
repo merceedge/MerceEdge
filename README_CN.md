@@ -78,8 +78,8 @@ MerceEdge可以：
     （先Ctrl + c 停止上面的edge运行）
 
     （然后修改rtmp组件的配置文件）
-     (MerceEdge) MerceEdge # vim merceedge/tests/component_template/rtmp_component.yaml
-     (修改第9行，然后保存并退出vim)
+     (MerceEdge) MerceEdge # vim merceedge/tests/formula/rtmp_demo_formula.yaml
+     (修改第24行，然后保存并退出vim)
       rtmp_url: "rtmp://change_your_rtmp_path_here" 或者 rtmp_url: "/local_path/test_video.mp4"
 
      (运行)
@@ -90,15 +90,20 @@ MerceEdge可以：
     (MerceEdge)  MerceEdge # cd merceedge/tests/demo 
     (MerceEdge)  demo # python object_detector_ui.py
 
-
-
+  可以看到输出显示结果
+  
+</a>
+<p align="center">
+    <img src="https://github.com/merceedge/resources/blob/master/object_detection_demo_record.gif?raw=true", width="360px">
+</p>
 
 ### 从docker运行(TODO)
 
 ## 例子
   * 边缘计算的例子
 
-  本例子从rtmp服务接收视频流，并使用目标识别的“连线负载”，对视频流进行目标识别分析，然后使用MQTT服务把视频分析结果发到显示终端组件上。
+  本例从rtmp服务接收视频流，并使用基于Tensorflow目标识别的“连线负载”，对视频流进行目标识别分析，最后使用MQTT服务把视频分析结果发到显示终端组件上。
+
 
     (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
 

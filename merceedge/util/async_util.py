@@ -25,7 +25,7 @@ try:
     # pylint: disable=invalid-name
     asyncio_run = asyncio.run  # type: ignore
 except AttributeError:
-    print("*"*40)
+    _LOGGER.info("env <python 3.7")
     _T = TypeVar('_T')
 
     def asyncio_run(main: Awaitable[_T], *, debug: bool = False) -> _T:
@@ -36,6 +36,7 @@ except AttributeError:
         try:
             return loop.run_until_complete(main)
         finally:
+            print('loop final')
             asyncio.set_event_loop(None)
             loop.close()
 

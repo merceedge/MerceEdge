@@ -43,7 +43,8 @@ TODO
 """
 class ComponentList(Resource): 
     def __init__(self):
-        self._lock = threading.Lock()
+        # self._lock = threading.Lock()
+        pass
 
     def get(self):
         """ Get All Component within a template
@@ -56,14 +57,14 @@ class ComponentList(Resource):
         创建指定类型的组件实例
         """
         args = component_parser.parse_args()
-        with self._lock:
-            new_component = current_app.edge.generate_component_instance(args['template_name'])
-            new_db_component = ComponentDBModel(uuid=new_component.id,
+        # with self._lock:
+        new_component = current_app.edge._generate_component_instance(args['template_name'])
+        new_db_component = ComponentDBModel(uuid=new_component.id,
                                                     template_name=args['template_name'])
 
-            db.session.add(new_db_component)
-            db.session.commit()
-            return new_db_component.uuid, 201
+        db.session.add(new_db_component)
+        db.session.commit()
+        return new_db_component.uuid, 201
 
 
 class Component(Resource):

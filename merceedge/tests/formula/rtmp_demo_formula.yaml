@@ -1,22 +1,53 @@
 version: '1'
 formula: rtmp_demo_formula
 author: Merce Group
-info: This is a rtmp demo formula.
+info: This is a rtmp demo output link object detection formula. |
+       rtmp --> object_detecion --> mqtt(object_detector_ui)
+
+components:
+  - template: rtmp_component
+    id: rtmp_component_test
+   
+  - template: object_detection
+    id: object_detection_test
+    parameters:
+      min_score_thresh: 0.3
+    
+  - template: object_detector_ui
+    id: object_detector_ui_test
+
 wires:
-  - output_slot: 
-      component: rtmp_component
-      output: 
-        name: rtmp_video_stream
-        parameters:
-          - name: rtmp_url
-            value: "rtmp://xxxxx.xx"
-    input_sink: 
-      component: mqtt_switch
-      input: 
-        name: toggle_input
-    wireload: 
-      name: pose_wireload
-      # parameters: TODO
+  - output_sink: 
+      component_id: rtmp_component_test
+      output: rtmp_video_stream
+      parameters: 
+        rtmp_url: "rtmp://change_your_rtmp_path_here"
+        # rtmp_url: "/local_path/test_video.mp4"
+    input_slot:
+      component_id: object_detection_test
+      input: rtmp
+  
+  - output_sink: 
+      component_id: object_detection_test
+      output: object_detection_result
+    input_slot:
+      component_id: object_detector_ui_test
+      input: object_detection_result
+
+  - output_sink: 
+      component_id: object_detection_test
+      output: rtmp_bytes
+    input_slot:
+      component_id: object_detector_ui_test
+      input: rtmp_bytes
+  
+  - output_sink: 
+      component_id: object_detection_test
+      output: rtmp_video_size
+    input_slot:
+      component_id: object_detector_ui_test
+      input: rtmp_video_size
+    
         
   
 

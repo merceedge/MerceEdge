@@ -1,0 +1,95 @@
+
+{
+    "title": "A JSON Schema for MerceEdge Component Tempalte",
+    "id": "https://github.com/merceedge/MerceEdge/blob/master/schema/component_template_schema.json#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "required": [
+      "version",
+      "component"
+    ],
+    "properties": {
+      "version": {
+        "type": "string",
+        "enum": [
+          "1.0"
+        ],
+        "description": "The component tempalte version of this document."
+      },
+      "component": {
+        "$ref": "#/definitions/componentTemplateDefinitions"
+      },
+      "description": {
+        "type": "string",
+        "description": "Any description about current component template"
+      }
+    },
+  
+    "definitions": {
+      "componentTemplateDefinitions": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "anyOf": [
+          {
+            "required": [
+                "outputs"
+            ]
+          },
+          {
+              "required": [
+                  "inputs"
+              ]
+          }
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Component tempalte name"
+          },
+          "vendor": {
+            "type": "string",
+            "description": "An unique component name at run time."
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/interfaceDefinitions"
+            }
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/interfaceDefinitions"
+            }
+          }
+        }
+      },
+      "interfaceDefinitions": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A unique interace name in component"
+          },
+          "protocol": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type":"string",
+                "enum": [
+                  "mqtt",
+                  "rtmp",
+                  "swagger2.0"
+                ]
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+     
+    }
+   
+  }

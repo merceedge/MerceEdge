@@ -1,0 +1,26 @@
+version: '1'
+component:
+  name: object_detector_ui
+  vendor: Merce project group
+  inputs:
+    - name: object_detection_result
+      protocol:
+        name: mqtt
+        topic: /mercedge/object_detection_result
+        qos: 0
+        retain: false
+        
+    - name: rtmp_bytes
+      protocol:
+        name: mqtt
+        topic: /mercedge/rtmp_bytes
+        qos: 0
+        retain: false
+    
+    - name: rtmp_video_size
+      protocol:
+        name: mqtt
+        topic: /mercedge/rtmp_video_size
+        qos: 0
+        retain: false
+      description: Object detector display component.

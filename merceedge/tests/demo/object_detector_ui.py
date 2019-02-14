@@ -9,62 +9,75 @@ from merceedge.tests.detect_object.utils.app_utils import FPS
 broker = '127.0.0.1'
 port = 1883
 keepalive = False
-width=960
-height=544
-
-
-
+width=0
+height=0
+frame = None
 input_q = Queue()  # fps is better if queue is higher but then more lags
 
 def _mqtt_on_message(_mqttc, _userdata, msg):
-    print(len(msg.payload))
-    input_q.put(msg.payload)    
+    global width, height
 
+    if msg.topic == u'/mercedge/rtmp_video_size':
+        size = json.loads(msg.payload.decode('utf-8'))
+        width = size['width']
+        height = size['height']
 
+    elif msg.topic == u'/mercedge/rtmp_bytes':
+        input_q.put(('rtmp_bytes', msg.payload))
+
+    elif msg.topic == u'/mercedge/object_detection_result':
+        input_q.put(('object_detection_result', msg.payload))
+    
 _mqttc = mqtt.Client(protocol=mqtt.MQTTv31)
 _mqttc.on_message = _mqtt_on_message
 _mqttc.connect(broker, port, keepalive)
 _mqttc.loop_start()
 
 
-
 def main():
-    _mqttc.subscribe('/mercedge/toggle_switch', 0)
+    _mqttc.subscribe('/mercedge/rtmp_video_size', 0)
+    _mqttc.subscribe('/mercedge/rtmp_bytes', 0)
+    _mqttc.subscribe('/mercedge/object_detection_result', 0)
     # fps = FPS().start()
     while True:
 
         t = time.time()
+        global width, height
+        if width == 0 or height == 0:
+            # print('waiting video size parameters', width, height)
+            continue
+        
+
         if input_q.empty():
-            print("input empty")
-            # time.sleep(0.5)
             pass
         else:
-            msg = input_q.get()
-            # print(msg)
-            frame_bytes = msg[:height*width*3]
-            detect_bytes = msg[height*width*3:]
-            # print(msg)
-            # print ("-"*30)
-            # print(detect_bytes.decode('utf8'))
-            data = json.loads(detect_bytes.decode('utf8'))
-            # print(len(data))
-            # # frame_str = data['frame']
+            payload = input_q.get()
+            global frame
+            
+            if payload[0] == 'rtmp_bytes':
+                
+                frame_bytes = payload[1]
+                frame = np.frombuffer(frame_bytes, dtype=np.uint8).reshape(height, width, 3)
 
-            frame = np.frombuffer(frame_bytes, dtype=np.uint8).reshape(height, width, 3)
-            font = cv2.FONT_HERSHEY_SIMPLEX
-
-            rec_points = data['rect_points']
-            class_names = data['class_names']
-            class_colors = data['class_colors']
-            for point, name, color in zip(rec_points, class_names, class_colors):
-                cv2.rectangle(frame, (int(point['xmin'] * width), int(point['ymin'] * height)),
-                              (int(point['xmax'] * width), int(point['ymax'] * height)), color, 3)
-                cv2.rectangle(frame, (int(point['xmin'] * width), int(point['ymin'] * height)),
-                              (int(point['xmin'] * width) + len(name[0]) * 6,
-                               int(point['ymin'] * height) - 10), color, -1, cv2.LINE_AA)
-                cv2.putText(frame, name[0], (int(point['xmin'] * width), int(point['ymin'] * height)), font,
-                            0.3, (0, 0, 0), 1)
-            cv2.imshow('Video', frame)
+            elif payload[0] == 'object_detection_result':
+                
+                object_detection_result = json.loads(payload[1].decode('utf-8'))
+                if frame is None:
+                    continue
+                
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                rec_points = object_detection_result['rect_points']
+                class_names = object_detection_result['class_names']
+                class_colors = object_detection_result['class_colors']
+                for point, name, color in zip(rec_points, class_names, class_colors):
+                    cv2.rectangle(frame, (int(point['xmin'] * width), int(point['ymin'] * height)),
+                                (int(point['xmax'] * width), int(point['ymax'] * height)), color, 3)
+                    cv2.rectangle(frame, (int(point['xmin'] * width), int(point['ymin'] * height)),
+                                (int(point['xmin'] * width) + len(name[0]) * 6,
+                                int(point['ymin'] * height) - 10), color, -1, cv2.LINE_AA)
+                    cv2.putText(frame, name[0], (int(point['xmin'] * width), int(point['ymin'] * height)), font,
+                                0.3, (0, 0, 0), 1)
+                cv2.imshow('Video', frame)
             
         # fps.update()
 

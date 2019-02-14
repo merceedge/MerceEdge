@@ -2,13 +2,15 @@ version: '1'
 component:
   name: rtmp_component
   vendor: Merce project group
+  # parameters:
+
   outputs:
     - name: rtmp_video_stream
       protocol: 
         name: rtmp
+        data_schema_type: merceedge
         # rtmp_url: "rtmp://change_your_rtmp_path_here"
         # rtmp_url: "/local_path/test_video.mp4"
-        rtmp_url: "/Users/hobo/Desktop/1548309591973109.mp4"
-        code: h.264
+        code: h.264 # TODO
 
   description: RTMP video stream component.
