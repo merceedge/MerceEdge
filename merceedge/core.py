@@ -137,16 +137,16 @@ class MerceEdge(object):
             self.component_templates[com_tmp_yaml['component']['name']] = com_tmp_yaml
             
 
-    def _generate_component_instance(self, component_template_name, id=None):
+    def _generate_component_instance(self, component_template_name, id=None, init_params=None):
         """Deepcopy component from component template
         """
         com_tmp_yaml = self.component_templates.get(component_template_name, None)
         if com_tmp_yaml:
             if com_tmp_yaml['component'].get('virtual', False):
                 new_com_cls = self.wireload_factory.get_class(com_tmp_yaml['component']['name'])
-                new_com = new_com_cls(self, com_tmp_yaml, id)
+                new_com = new_com_cls(self, com_tmp_yaml, id, init_params)
             else:
-                new_com = Component(self, com_tmp_yaml, id)
+                new_com = Component(self, com_tmp_yaml, id, init_params)
             self.components[new_com.id] = new_com
             return new_com
         else:
@@ -154,13 +154,13 @@ class MerceEdge(object):
             pass
         return None
     
-    def generate_component_instance(self, component_template_name, component_id):
+    def generate_component_instance(self, component_template_name, component_id, init_params=None):
         """ Get component from self.components dict by id, if not exit, create new one, and 
             save into self.components
         """
         component = self.components.get(component_id, None)
         if component is None:
-            component = self._generate_component_instance(component_template_name, component_id)
+            component = self._generate_component_instance(component_template_name, component_id, init_params)
             if component:
                 return component
         raise ComponentTemplateNotFound
@@ -177,10 +177,13 @@ class MerceEdge(object):
         wire = Wire(edge=self, output_sink=output_sink, input_slot=input_slot, id=wire_id)
         wire.set_input_params(output_params)
         wire.set_output_params(input_params)
+        print(wire.output_sink.name, wire.output_sink, output_params, wire.output_sink.attrs)
+        print(wire.input_slot.name, wire.input_slot, input_params, wire.input_slot.attrs)
+
         self.wires[wire.id] = wire
         
         await self.components[output_component_id].outputs[output_name].conn_output_sink(output_wire_params=output_params)
-        await self.components[input_component_id].inputs[input_name].conn_input_slot()
+        await self.components[input_component_id].inputs[input_name].conn_input_slot(input_wire_params=input_params)
         wire.connect()
         return wire
 
@@ -238,7 +241,9 @@ class MerceEdge(object):
             wires = formula_yaml['wires']
             for component in components:
                 # TODO init component parameters
-                self.generate_component_instance(component['template'], component['id'])
+                self.generate_component_instance(component['template'], 
+                                                 component['id'], 
+                                                 component.get('parameters', None))
 
             for wire in wires:
                 # struct components
@@ -489,7 +494,7 @@ class Entity(object):
 class Component(Entity):
     """ABC for Merce Edge components"""
     
-    def __init__(self, edge, model_template_config, id=None):
+    def __init__(self, edge, model_template_config, id=None, init_params=None):
         """
         model_template_config: yaml object
         """
@@ -498,10 +503,19 @@ class Component(Entity):
         self.id = id or id_util.generte_unique_id()
         self.inputs = {}
         self.outputs = {}
+        self.init_params = init_params or {}
         # self.components = {}
         
         # init interfaces
         self._init_interfaces()
+
+    @property
+    def parameters(self):
+        return self.init_params
+
+    @parameters.setter
+    def parameters(self, params):
+        self.init_params = params
     
     def _init_interfaces(self):
         """initiate inputs & outputs
@@ -635,8 +649,8 @@ class Input(Interface):
             # TODO log no such provider key error
             raise
 
-    async def conn_input_slot(self):
-        await self.provider.conn_input_slot(self)
+    async def conn_input_slot(self, input_wire_params={}):
+        await self.provider.conn_input_slot(self, input_wire_params)
 
     async def emit_data_to_input(self, payload):
         # Emit data to EventBus and invoke configuration service send data function.
@@ -693,9 +707,11 @@ class Wire(Entity):
     
     def set_input_params(self, parameters):
         self.input_params = parameters
+        self.input.set_attrs(parameters)
 
     def set_output_params(self, parameters):
         self.output_params = parameters
+        self.output.set_attrs(parameters)
 
     def disconnect(self):
         self.input.del_wire(self.id)
@@ -726,12 +742,10 @@ class WireLoad(Component):
     """
     name = ''
 
-
-    def __init__(self, edge, model_template_config, component_id=None, init_params={}):
-        super(WireLoad, self).__init__(edge, model_template_config, id=component_id)
+    def __init__(self, edge, model_template_config, component_id=None, init_params=None):
+        super(WireLoad, self).__init__(edge, model_template_config, id=component_id, init_params=init_params)
         self.input_q = asyncio.Queue(maxsize=3, loop=self.edge.loop)
         self.output_q = asyncio.Queue(maxsize=3, loop=self.edge.loop)
-        self.init_params = init_params
         self.is_stop = False
 
     def before_run_setup(self):

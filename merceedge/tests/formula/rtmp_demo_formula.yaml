@@ -10,6 +10,8 @@ components:
    
   - template: object_detection
     id: object_detection_test
+    parameters:
+      min_score_thresh: 0.3
     
   - template: object_detector_ui
     id: object_detector_ui_test
@@ -19,7 +21,8 @@ wires:
       component_id: rtmp_component_test
       output: rtmp_video_stream
       parameters: 
-        rtmp_url: 'rtmp://xxx.xxxxx'
+        rtmp_url: "rtmp://change_your_rtmp_path_here"
+        # rtmp_url: "/local_path/test_video.mp4"
     input_slot:
       component_id: object_detection_test
       input: rtmp

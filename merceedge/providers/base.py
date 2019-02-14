@@ -29,7 +29,7 @@ class ServiceProvider(Singleton):
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
         raise NotImplementedError
 
-    async def conn_input_slot(self, input):
+    async def conn_input_slot(self, input, input_wire_params):
         """connect input interface on wire input slot """
         pass
     

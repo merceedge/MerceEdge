@@ -49,7 +49,7 @@ class EdgeFlask(Flask):
 
 def app_run(edge):
     app = EdgeFlask(edge, __name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/test.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///./test.db'
     with app.app_context():
         db.init_app(app)
         db.create_all(app=app)

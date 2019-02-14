@@ -35,7 +35,7 @@ categories = label_map_util.convert_label_map_to_categories(label_map, max_num_c
 category_index = label_map_util.create_category_index(categories)
 
 
-def detect_objects(image_np, sess, detection_graph):
+def detect_objects(image_np, sess, detection_graph, min_score_thresh=0.5):
     # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
     image_np_expanded = np.expand_dims(image_np, axis=0)
     image_tensor = detection_graph.get_tensor_by_name('image_tensor:0')
@@ -60,7 +60,7 @@ def detect_objects(image_np, sess, detection_graph):
         classes=np.squeeze(classes).astype(np.int32),
         scores=np.squeeze(scores),
         category_index=category_index,
-        min_score_thresh=.5
+        min_score_thresh=min_score_thresh
     )
     return dict(rect_points=rect_points, class_names=class_names, class_colors=class_colors)
 
@@ -75,6 +75,8 @@ class ObjectDetectionWireLoad(WireLoad):
         self.test_num = 0
         self.width = 0
         self.height = 0
+        self.min_score_thresh = init_params.get('min_score_thresh', 0.5)
+        print('min_score_thresh: ', self.min_score_thresh)
         self.before_run_setup()
 
     def before_run_setup(self):
@@ -99,7 +101,7 @@ class ObjectDetectionWireLoad(WireLoad):
         self.fps.update()
         # print(type(frame))
         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        result = detect_objects(frame_rgb, self.sess, self.detection_graph)
+        result = detect_objects(frame_rgb, self.sess, self.detection_graph, self.min_score_thresh)
         # print(result)
         await self.put_output_payload(output_name='rtmp_bytes', payload=frame.tobytes())
         await self.put_output_payload(output_name='object_detection_result', payload=result)

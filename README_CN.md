@@ -78,8 +78,8 @@ MerceEdge可以：
     （先Ctrl + c 停止上面的edge运行）
 
     （然后修改rtmp组件的配置文件）
-     (MerceEdge) MerceEdge # vim merceedge/tests/component_template/rtmp_component.yaml
-     (修改第9行，然后保存并退出vim)
+     (MerceEdge) MerceEdge # vim merceedge/tests/formula/rtmp_demo_formula.yaml
+     (修改第24行，然后保存并退出vim)
       rtmp_url: "rtmp://change_your_rtmp_path_here" 或者 rtmp_url: "/local_path/test_video.mp4"
 
      (运行)

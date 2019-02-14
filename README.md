@@ -3,7 +3,7 @@
 [中文](https://github.com/merceedge/MerceEdge/blob/master/README_CN.md)
 
 
-MerceEdge is an edge heterogeneous protocol component connection service that can run on PCs, RaspberryPis, and servers. It can be used in a variety of applications, such as SmartHome, SmartFactroy, etc. Currently, the protocols currently planned include: mqtt, ZigBee, BLE, REST API.
+MerceEdge is an edge heterogeneous protocol component connection service that can run on PC, RaspberryPi, and server. It can be used in a variety of applications, such as SmartHome, SmartFactroy, etc. Currently, the protocols currently planned include: mqtt, ZigBee, BLE, REST API.
 
 MerceEdge can:
 * Connect the IOT components of the combined heterogeneous protocol at the edge of the cloud computing
@@ -78,8 +78,8 @@ Install a mqtt server locally (because MerceEdge uses the MQTT service, we need 
     （First Ctrl + c stop the above edge run）
 
     （Then modify the configuration file of the rtmp component）
-     (MerceEdge) MerceEdge # vim merceedge/tests/component_template/rtmp_component.yaml
-     (Modify line 9, then save and exit vim)
+     (MerceEdge) MerceEdge # vim merceedge/tests/formula/rtmp_demo_formula.yaml
+     (Modify line 24, then save and exit vim)
       rtmp_url: "rtmp://change_your_rtmp_path_here" or rtmp_url: "/local_path/test_video.mp4"
 
      (Let's run)
