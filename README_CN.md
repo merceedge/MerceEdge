@@ -90,7 +90,9 @@ MerceEdge可以：
     (MerceEdge)  MerceEdge # cd merceedge/tests/demo 
     (MerceEdge)  demo # python object_detector_ui.py
 
-
+  可以看到输出显示结果
+  
+  ![object detector](https://merceedge.oss-cn-hongkong.aliyuncs.com/object_detection_demo_record.gif)
 
 
 ### 从docker运行(TODO)
@@ -98,7 +100,8 @@ MerceEdge可以：
 ## 例子
   * 边缘计算的例子
 
-  本例子从rtmp服务接收视频流，并使用目标识别的“连线负载”，对视频流进行目标识别分析，然后使用MQTT服务把视频分析结果发到显示终端组件上。
+  本例从rtmp服务接收视频流，并使用基于Tensorflow目标识别的“连线负载”，对视频流进行目标识别分析，最后使用MQTT服务把视频分析结果发到显示终端组件上。
+
 
     (MerceEdge) MerceEdge # edge -f ./merceedge/tests/formula/rtmp_demo_formula.yaml
 

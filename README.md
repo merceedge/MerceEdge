@@ -91,7 +91,7 @@ Open another terminal window, and also use the MerceEdge virtualenv set up earli
     (MerceEdge)  demo # python object_detector_ui.py
 
 
-
+ ![object detector](https://merceedge.oss-cn-hongkong.aliyuncs.com/object_detection_demo_record.gif)
 
 ### Run from docker (TODO)
 
@@ -129,7 +129,7 @@ Component, interface, connection, protocol provider
 
 ## Known issues(TODO)
 ## Open Source Agreement (Apache License 2.0)
-## Related Discussion Area
+## Related Discussion
 * [Telegram](https://t.me/joinchat/AC9xSxWoAgXjLnBuQPFDqw)
 * [Slack](https://merceedgecommunity.slack.com/archives/CFNQ62K6Y)
 
