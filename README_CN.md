@@ -18,12 +18,17 @@ MerceEdge可以：
 
 围绕在我们身边的不同协议的物联网（IOT）设备越来越多，但不同协议类型的、遗留的、不同厂家的设备经常无法兼容，我们希望能够提供一种运行在用户本地，具有快速反应的、安全的、易用的连接服务，让用户能够根据自己的需要，灵活组织不同的设备交互，完成特定的功能。
 
-## 术语表 (TODO)
+## 抽象模型
+</a>
+<p align="center">
+    <img src="https://github.com/merceedge/resources/blob/master/MerceEdge_models.png?raw=true", width="600px">
+</p>
+
 
     * 组件（component）
     * 接口（interface）
     * 连线（wire）
-    * 连线负载（wire Load）
+    * 连线负载（wire load）
     * 方案（formula）
 
 

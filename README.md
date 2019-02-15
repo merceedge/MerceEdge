@@ -18,7 +18,11 @@ MerceEdge can:
 
 There are more and more Internet of Things (IOT) devices around different protocols around us, but different protocol types, legacy, and different vendors' devices are often incompatible. We hope to provide a kind of operation that is local to the user and has a quick response. The secure, easy-to-use connection service allows users to flexibly organize different device interactions and perform specific functions according to their needs.
 
-## Glossary (TODO)
+## Abstrat model
+</a>
+<p align="center">
+    <img src="https://github.com/merceedge/resources/blob/master/MerceEdge_models.png?raw=true", width="700px">
+</p>
 
     * Component
     * Interface
