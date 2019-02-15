@@ -1,0 +1,34 @@
+version: '3'
+services:
+  mosquitto:
+    hostname: mosquitto
+    image: eclipse-mosquitto
+    container_name: mosquitto_container
+    expose:
+      - "1883"
+      - "9001"
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+
+  merceedge:
+    depends_on:
+      - mosquitto
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: merceedge_image
+    container_name: merceedge_container
+    volumes:
+      - ./:/home/MerceEdge
+    environment:
+      PYTHONPATH: /home/MerceEdge
+      MERCE_EDGE_HOME: /home/MerceEdge
+      PATH: /home/MerceEdge/merceedge:$PATH
+    expose:
+      - 8080
+    ports:
+      - "8080:8080"
+    command: python merceedge/__main__.py -f merceedge/tests/formula/rtmp_demo_formula.yaml
+    stdin_open: true
+    tty: true
