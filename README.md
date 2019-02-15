@@ -95,7 +95,21 @@ Open another terminal window, and also use the MerceEdge virtualenv set up earli
     <img src="https://github.com/merceedge/resources/blob/master/object_detection_demo_record.gif?raw=true", width="360px">
 </p>
 
-### Run from docker (TODO)
+### Run from docker 
+
+  1. Intall [docker](https://docs.docker.com/install/overview/) and [docker-compose](https://docs.docker.com/compose/install/)
+  2.   git clone MerceEdge source code
+
+    git clone https://github.com/merceedge/MerceEdge.git .
+    cd MerceEdge
+
+  3. Build docker merceedge image
+
+    docker-compose build
+
+  4.  run
+
+    docker-compose up
 
 ## Demo
   * Demo of edge calculation

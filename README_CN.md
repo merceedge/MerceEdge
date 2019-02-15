@@ -97,7 +97,22 @@ MerceEdge可以：
     <img src="https://github.com/merceedge/resources/blob/master/object_detection_demo_record.gif?raw=true", width="360px">
 </p>
 
-### 从docker运行(TODO)
+
+### 从docker运行
+  1. 安装[docker](https://docs.docker.com/install/overview/)和[docker-compose](https://docs.docker.com/compose/install/)
+  2.   git clone源代码
+
+    git clone https://github.com/merceedge/MerceEdge.git .
+    cd MerceEdge
+
+  3. Build docker merceedge镜像
+
+    docker-compose build
+
+  4.  运行
+
+    docker-compose up
+
 
 ## 例子
   * 边缘计算的例子
