@@ -1,10 +1,8 @@
 import logging
 import asyncio
 import json
-from merceedge.providers.base import (
-    ServiceProvider,
-    Singleton
-)
+from merceedge.providers.base import ServiceProvider
+
 from merceedge.service import (
     Service,
     ServiceCall
@@ -55,7 +53,6 @@ ATTR_RETAIN = 'retain'
 MAX_RECONNECT_WAIT = 300  # seconds
 
 class MqttServiceProvider(ServiceProvider):
-    # __metaclass__ = Singleton
     DOMAIN = 'mqtt'
     name=DOMAIN
     SERVICE_PUBLISH = 'publish'
@@ -65,22 +62,21 @@ class MqttServiceProvider(ServiceProvider):
         # TODO broker_ip broker_port username password etc.
         self._paho_lock = asyncio.Lock(loop=edge.loop)
         super(MqttServiceProvider, self).__init__(edge, config)
-
-
-    async def async_setup(self, edge , config):
+        
+    async def async_setup(self, edge, attrs):
         self.edge = edge
         # TODO need validate config
         
         # TODO MQTT client setup
-        conf = config[self.DOMAIN]
-        broker = conf[CONF_BROKER]
-        port = util.convert(conf.get(CONF_PORT), int, DEFAULT_PORT)
-        client_id = util.convert(conf.get(CONF_CLIENT_ID), str)
-        keepalive = util.convert(conf.get(CONF_KEEPALIVE), int, DEFAULT_KEEPALIVE)
-        username = util.convert(conf.get(CONF_USERNAME), str)
-        password = util.convert(conf.get(CONF_PASSWORD), str)
-        certificate = util.convert(conf.get(CONF_CERTIFICATE), str)
-        protocol = util.convert(conf.get(CONF_PROTOCOL), str, DEFAULT_PROTOCOL)
+        conf = self.config[self.DOMAIN]
+        broker = attrs.get(CONF_BROKER, conf[CONF_BROKER])
+        port = util.convert(attrs.get(CONF_PORT), int, DEFAULT_PORT)
+        client_id = util.convert(attrs.get(CONF_CLIENT_ID), str, conf.get(CONF_CLIENT_ID))
+        keepalive = util.convert(attrs.get(CONF_KEEPALIVE), int, DEFAULT_KEEPALIVE)
+        username = util.convert(attrs.get(CONF_USERNAME), str)
+        password = util.convert(attrs.get(CONF_PASSWORD), str)
+        certificate = util.convert(attrs.get(CONF_CERTIFICATE), str)
+        protocol = util.convert(attrs.get(CONF_PROTOCOL), str, DEFAULT_PROTOCOL)
 
         if protocol not in (PROTOCOL_31, PROTOCOL_311):
             _LOGGER.error('Invalid protocol specified: %s. Allowed values: %s, %s',
@@ -123,16 +119,12 @@ class MqttServiceProvider(ServiceProvider):
         self._mqttc.loop_start()
         # register mqtt publish service 
         
-        self.edge.services.async_register(self.DOMAIN, 
-                                          self.SERVICE_PUBLISH,
-                                          self.async_publish_service,
-                                          # description=self.SERVICE_PUBLISH
-                                         )
+        # self.edge.services.async_register(self.DOMAIN, 
+        #                                   self.SERVICE_PUBLISH,
+        #                                   self.async_publish_service,
+        #                                  )
        
-
         self.edge.bus.async_listen_once(EVENT_EDGE_STOP, self.async_stop_mqtt)
-
-        return True
 
     async def async_stop_mqtt(self, event):
         """Stop the MQTT client.
@@ -145,45 +137,29 @@ class MqttServiceProvider(ServiceProvider):
             self._mqttc.loop_stop()
         print("mqtt provider aborting...")
         await self.edge.async_add_job(stop)
-        
-    
-    async def async_publish_service(self, call: ServiceCall):
+            
+    async def async_publish(self, data):
         """Handle MQTT publish service calls."""
-        msg_topic = call.data.get(ATTR_TOPIC)
-        payload = call.data.get(ATTR_PAYLOAD)
-        # print("xxxxxxxx")
-        # print(payload)
+        msg_topic = data.get(ATTR_TOPIC)
+        payload = data.get(ATTR_PAYLOAD)
 
-        payload_template = call.data.get(ATTR_PAYLOAD_TEMPLATE)
-        qos = call.data.get(ATTR_QOS, DEFAULT_QOS)
-        retain = call.data.get(ATTR_RETAIN, DEFAULT_RETAIN)
+        payload_template = data.get(ATTR_PAYLOAD_TEMPLATE)
+        qos = data.get(ATTR_QOS, DEFAULT_QOS)
+        retain = data.get(ATTR_RETAIN, DEFAULT_RETAIN)
         if payload is None:
             if payload_template is None:
                 _LOGGER.error(
                     "You must set either '%s' or '%s' to use this service",
                     ATTR_PAYLOAD, ATTR_PAYLOAD_TEMPLATE)
                 return
-            # try:
-            #     payload = template.render(hass, payload_template)
-            # except template.jinja2.TemplateError as exc:
-            #     _LOGGER.error(
-            #         "Unable to publish to '%s': rendering payload template of "
-            #         "'%s' failed because %s.",
-            #         msg_topic, payload_template, exc)
-            #     return
+           
         if msg_topic is None or payload is None:
             return
         
-        # self._mqttc.publish(msg_topic, payload, qos, retain)
-        # print('-- publish: %s' % msg_topic)
         async with self._paho_lock:
-            print('---- async_add_job: %s' % msg_topic)
             _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
             await self.edge.async_add_job(
                 self._mqttc.publish, msg_topic, payload, qos, retain)
-            print('---- async_add_job2: %s' % msg_topic)
-        print('---- async_add_job done ----:')
-        
         
 
     def _build_publish_data(self, topic, qos, retain, payload=None):
@@ -199,7 +175,8 @@ class MqttServiceProvider(ServiceProvider):
         return data
 
     def on_publish(self, client, obj, mid):
-        print("mqtt publish: " + str(mid))
+        # print("mqtt publish: " + str(mid))
+        pass
 
     def _mqtt_on_message(self, _mqttc, _userdata, msg):
         # TODO need fix this proto code
@@ -222,7 +199,7 @@ class MqttServiceProvider(ServiceProvider):
         #     mqtt_listener_num = await self.edge.bus.listeners[self.MQTT_MSG_RCV_EVENT]
         # except KeyError:
         #     # TODO log no need listen MQTT_MSG_RCV_EVENT msg again
-        self.edge.bus.async_listen(self.MQTT_MSG_RCV_EVENT, callback)
+        self.edge.bus.listen(self.MQTT_MSG_RCV_EVENT, callback)
 
     def disconn_output_sink(self, output):
         """ disconnect wire output sink
@@ -238,4 +215,4 @@ class MqttServiceProvider(ServiceProvider):
                                         payload)
         
         # print("mqtt emit_input_slot")
-        await self.edge.services.async_call(self.DOMAIN, self.SERVICE_PUBLISH, data)
+        await self.async_publish(data)

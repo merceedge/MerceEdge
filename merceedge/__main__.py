@@ -86,11 +86,10 @@ def main():
     # Walk throught service provider path and load all services
     print("Load service provider path: {}".format(os.path.join(dir_path, user_config['provider_path'])))
     ServiceProviderFactory.init(os.path.join(dir_path, user_config['provider_path']), edge, user_config)
-    setup_tasks = []
-    for name, provider in ServiceProviderFactory.providers.items():
-        # print(name)
-        setup_tasks.append(provider.async_setup(edge, user_config))
-    edge.loop.run_until_complete(asyncio.wait(setup_tasks))
+    # setup_tasks = []
+    # for name, provider in ServiceProviderFactory.providers.items():
+    #     setup_tasks.append(provider.async_setup(edge, user_config))
+    # edge.loop.run_until_complete(asyncio.wait(setup_tasks))
     
 
     # 3. setup api server

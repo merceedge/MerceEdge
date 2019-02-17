@@ -1,14 +1,14 @@
 
-class Singleton(object):
-    _instance = None
+# class Singleton(object):
+#     _instance = None
 
-    def __new__(cls, edge, config):
-        if not cls._instance:
-            cls._instance = super(Singleton, cls).__new__(cls)  
-        return cls._instance  
+#     def __new__(cls, edge, config):
+#         if not cls._instance:
+#             cls._instance = super(Singleton, cls).__new__(cls)  
+#         return cls._instance  
 
 
-class ServiceProvider(Singleton):
+class ServiceProvider(object):
     def __init__(self, edge, config):
         """
         edge: MerceEdge instance

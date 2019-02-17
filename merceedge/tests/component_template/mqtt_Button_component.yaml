@@ -6,6 +6,14 @@ component:
     - name: toggle_output
       protocol: 
         name: mqtt
+        # broker:
+        # port
+        # client_id
+        # keepalive
+        # username
+        #password
+        # certificate:
+        # protocol: 3.1.1
         topic: /mercedge/toggle_button
         qos: 0
         retain: false

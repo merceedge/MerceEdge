@@ -116,9 +116,29 @@ class MerceEdge(object):
         # Run forever
         try:
             # Block until stopped
-            _LOGGER.info("Starting MerceEdge core loop start")
+            _LOGGER.info("Starting MerceEdge core loop")
             self.loop.run_forever()
-      
+        except KeyboardInterrupt:
+            # Optionally show a message if the shutdown may take a while
+            print("Attempting graceful shutdown, press Ctrl+C again to exit…", flush=True)
+
+            # Do not show `asyncio.CancelledError` exceptions during shutdown
+            # (a lot of these may be generated, skip this if you prefer to see them)
+            def shutdown_exception_handler(loop, context):
+                if "exception" not in context \
+                or not isinstance(context["exception"], asyncio.CancelledError):
+                    loop.default_exception_handler(context)
+            self.loop.set_exception_handler(shutdown_exception_handler)
+
+            # Handle shutdown gracefully by waiting for all tasks to be cancelled
+            tasks = asyncio.gather(*asyncio.Task.all_tasks(loop=self.loop), loop=self.loop, return_exceptions=True)
+            tasks.add_done_callback(lambda t: self.loop.stop())
+            tasks.cancel()
+
+            # Keep the event loop running until it is either destroyed or all
+            # tasks have really terminated
+            while not tasks.done() and not self.loop.is_closed():
+                self.loop.run_forever()
         finally:
             self.loop.close()
         return self.exit_code
@@ -602,6 +622,7 @@ class Output(Interface):
             _LOGGER.debug("Output {} load provider {}".format(self.name, self.provider))
             # if self.provider:
             #     self.provider.new_instance_setup(self.name, self.attrs, True)
+            self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         except KeyError as e:
             # log no such provider key error
             _LOGGER.error("Cannot load {} provider".format(self.protocol))
@@ -645,6 +666,7 @@ class Input(Interface):
     def _init_provider(self):
         try:
             self.provider = ServiceProviderFactory.get_provider(self.protocol)
+            self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         except KeyError:
             # TODO log no such provider key error
             raise

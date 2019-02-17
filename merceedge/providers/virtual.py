@@ -1,6 +1,5 @@
 from merceedge.providers.base import (
-    ServiceProvider,
-    Singleton
+    ServiceProvider
 )
 
 class VirtualInterfaceProvider(ServiceProvider):

@@ -1,9 +1,9 @@
 provider_path: "providers"
 
 mqtt:
-  broker: mosquitto
+  broker: 127.0.0.1
   port: 1883
-  client_id: merceedge001
+  # client_id: merceedge001
   keepalive: 60
   # username: 
   # password:
