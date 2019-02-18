@@ -115,14 +115,8 @@ class MqttServiceProvider(ServiceProvider):
             import paho.mqtt.client as mqtt
             _LOGGER.error("Failed to connect: %s", mqtt.error_string(result))
             return False
-
-        self._mqttc.loop_start()
-        # register mqtt publish service 
         
-        # self.edge.services.async_register(self.DOMAIN, 
-        #                                   self.SERVICE_PUBLISH,
-        #                                   self.async_publish_service,
-        #                                  )
+        self._mqttc.loop_start()
        
         self.edge.bus.async_listen_once(EVENT_EDGE_STOP, self.async_stop_mqtt)
 
@@ -155,7 +149,7 @@ class MqttServiceProvider(ServiceProvider):
            
         if msg_topic is None or payload is None:
             return
-        
+
         async with self._paho_lock:
             _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
             await self.edge.async_add_job(
@@ -180,10 +174,10 @@ class MqttServiceProvider(ServiceProvider):
 
     def _mqtt_on_message(self, _mqttc, _userdata, msg):
         # TODO need fix this proto code
-        self.edge.bus.fire(self.MQTT_MSG_RCV_EVENT, msg.payload.decode('utf-8'))
+        self.edge.bus.fire(self.event_type, msg.payload.decode('utf-8'))
     
 
-    async def conn_output_sink(self, output, output_wire_params, callback):
+    async def conn_output_sink(self, output, output_wire_params, callback):                       
         # TODO mqtt client subscribe topic (need fix this proto code)
         # self._mqttc.subscribe(output.get_attrs('topic'), 0)
         topic = output.get_attrs('topic')
@@ -199,7 +193,9 @@ class MqttServiceProvider(ServiceProvider):
         #     mqtt_listener_num = await self.edge.bus.listeners[self.MQTT_MSG_RCV_EVENT]
         # except KeyError:
         #     # TODO log no need listen MQTT_MSG_RCV_EVENT msg again
-        self.edge.bus.listen(self.MQTT_MSG_RCV_EVENT, callback)
+        event_type = "{}_{}".format(self.MQTT_MSG_RCV_EVENT, output.id)
+        self.event_type = event_type
+        self.edge.bus.listen(event_type, callback)
 
     def disconn_output_sink(self, output):
         """ disconnect wire output sink

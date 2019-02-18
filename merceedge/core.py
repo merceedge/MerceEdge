@@ -622,7 +622,7 @@ class Output(Interface):
             _LOGGER.debug("Output {} load provider {}".format(self.name, self.provider))
             # if self.provider:
             #     self.provider.new_instance_setup(self.name, self.attrs, True)
-            self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
+            # self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         except KeyError as e:
             # log no such provider key error
             _LOGGER.error("Cannot load {} provider".format(self.protocol))
@@ -630,15 +630,16 @@ class Output(Interface):
     
     async def conn_output_sink(self, output_wire_params={}):
         """ register EventBus listener"""
+        self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         await self.provider.conn_output_sink(output=self, 
                                        output_wire_params=output_wire_params,
                                        callback=self.output_sink_callback)
     
-    def output_sink_callback(self, payload):
+    def output_sink_callback(self, event):
         """Send output Event"""
         # 发送wirefire Event（连线的时候Wire的Output需要注册Input的wirefire事件）
         wirefire_event_type = "wirefire_{}_{}".format(self.component.id, self.name)
-        self.edge.bus.fire(wirefire_event_type, payload)
+        self.edge.bus.fire(wirefire_event_type, event.data)
 
 
 class Input(Interface):
@@ -666,17 +667,18 @@ class Input(Interface):
     def _init_provider(self):
         try:
             self.provider = ServiceProviderFactory.get_provider(self.protocol)
-            self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
+            # self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         except KeyError:
             # TODO log no such provider key error
             raise
 
     async def conn_input_slot(self, input_wire_params={}):
+        self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         await self.provider.conn_input_slot(self, input_wire_params)
 
-    async def emit_data_to_input(self, payload):
+    async def emit_data_to_input(self, event):
         # Emit data to EventBus and invoke configuration service send data function.
-        await self.provider.emit_input_slot(self, payload.data)
+        await self.provider.emit_input_slot(self, event.data)
 
 
 class State(object):
@@ -804,7 +806,10 @@ class WireLoad(Component):
         output_payload = await self.output_q.get()
         try:
             if output_payload:
-                self.outputs[output_payload[0]].output_sink_callback(output_payload[1])
+                
+                # self.outputs[output_payload[0]].output_sink_callback(output_payload[1])
+                event_type = "{}_{}_{}".format("virtual_wire_event", self.id, output_payload[0])
+                self.edge.bus.async_fire(event_type, output_payload[1])
         except KeyError as e:
             _LOGGER.warn("Cannot find output: {}".format(e))
 

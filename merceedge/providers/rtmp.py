@@ -26,13 +26,14 @@ class RTMPProvider(ServiceProvider):
         print("rtmp provider aborting...")
         self.abort_immediately = True
         self.t.join()
-        
+    
     def _rtmp_pull_stream(self, rtmp_id, rtmp_url, params, callback):
         """
             TODO user params
         """
         stream = cv2.VideoCapture(rtmp_url)
         while True:
+            
             if self.abort_immediately:
                 print('rtmp provider thread exit')
                 return
@@ -43,7 +44,8 @@ class RTMPProvider(ServiceProvider):
                 break
             
             time.sleep(0.08)
-            callback(frame)
+            # callback(frame)
+            self.edge.bus.async_fire("{}_{}".format(self.RTMP_FRAME_EVENT, self.output.id), frame)
             
 
     def _new_rtmp_client(self, rtmp_id, rtmp_url, params, callback):
@@ -56,4 +58,6 @@ class RTMPProvider(ServiceProvider):
     async def conn_output_sink(self, output, output_wire_params, callback):       
         rtmp_id = output.id
         rtmp_url = output.get_attrs('rtmp_url')
+        self.output = output
+        self.edge.bus.async_listen("{}_{}".format(self.RTMP_FRAME_EVENT, output.id), callback)
         self._new_rtmp_client(rtmp_id, rtmp_url, output_wire_params, callback)
