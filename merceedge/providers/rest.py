@@ -21,6 +21,7 @@ from swagger_tester.swagger_tester import (
 from merceedge.providers.base import ServiceProvider
 from merceedge.const import (
     EVENT_TIME_CHANGED,
+    EVENT_EDGE_STOP
 )
 from merceedge.service import (
     Service,
@@ -41,6 +42,31 @@ ATTR_ACTION = 'files'
 
 _HTTP_METHODS = ['put', 'post', 'get', 'delete', 'options', 'head', 'patch']
 
+
+async def async_request_service(call: ServiceCall):
+    """Handle REST API request service calls"""
+    # print("_request_service!!!")
+    url = call.data.get(ATTR_URL)
+    body = call.data.get(ATTR_PAYLOAD) or {}
+    headers = call.data.get(ATTR_HEADERS) or {}
+    action = call.data.get(ATTR_ACTION)
+    # request
+    api_client = requests
+    method = _get_method_from_action(api_client, action)
+    response =  method(url=url, 
+                    headers=dict(headers),
+                    data=body)
+    logger.info(u"request service response: {} {}".format(response.status_code, response.text))
+
+def _get_method_from_action(client, action):
+    """ Get aiohttp action request method
+    """
+    error_msg = "Action '{0}' is not recognized; needs to be one of {1}.".format(action, str(_HTTP_METHODS))
+    assert action in _HTTP_METHODS, error_msg
+
+    return client.__getattribute__(action)
+
+
 class RestApiProvider(ServiceProvider):
     DOMAIN = 'swagger2.0'
     name=DOMAIN
@@ -55,37 +81,19 @@ class RestApiProvider(ServiceProvider):
     
     async def async_setup(self, edge, config):
         # setup request timer
-        self.edge.bus.async_listen(EVENT_TIME_CHANGED, self.request_timer_handler)
+        self.remove_request_timer_handler = self.edge.bus.async_listen(EVENT_TIME_CHANGED, self.request_timer_handler)
 
         # setup request service
         self.edge.services.async_register(self.DOMAIN, 
                                           self.SERVICE_REST_REQUEST, 
-                                          self.async_request_service)
+                                          async_request_service)
+
+        self.edge.bus.async_listen_once(EVENT_EDGE_STOP, self.async_stop_rest)
     
-    def _get_method_from_action(self, client, action):
-        """ Get aiohttp action request method
-        """
-        error_msg = "Action '{0}' is not recognized; needs to be one of {1}.".format(action, str(_HTTP_METHODS))
-        assert action in _HTTP_METHODS, error_msg
+    async def async_stop_rest(self, event):
+        print("rest provider aborting...")
+        self.remove_request_timer_handler()
 
-        return client.__getattribute__(action)
-
-
-    async def async_request_service(self, call: ServiceCall):
-        """Handle REST API request service calls"""
-        # print("_request_service!!!")
-        url = call.data.get(ATTR_URL)
-        body = call.data.get(ATTR_PAYLOAD) or {}
-        headers = call.data.get(ATTR_HEADERS) or {}
-        action = call.data.get(ATTR_ACTION)
-        # request
-        api_client = requests
-        method = self._get_method_from_action(api_client, action)
-        response =  method(url=url, 
-                                                          headers=dict(headers),
-                                                          data=body)
-        logger.info(u"request service response: {} {}".format(response.status_code, response.text))
-        
     def _new_requester_setup(self, output, output_wire_params, response_handler):
         """ Read input or output interface config(swagger 2.0 standard compliant).
             Create rest api requester instance. if is_settimer is True, register periodic api requester
@@ -104,13 +112,14 @@ class RestApiProvider(ServiceProvider):
     async def request_timer_handler(self, event):
         # print("*"*30)
         # print(event)
-        for operationId, args in self._requesters.items():
+        for _, args in self._requesters.items():
             # request_action, url, body, headers, files
             data = {
                 ATTR_ACTION: args[0],
                 ATTR_URL: args[1],
                 ATTR_PAYLOAD: args[2],
                 ATTR_HEADERS: args[3]}
+
             await self.edge.services.async_call(self.DOMAIN, self.SERVICE_REST_REQUEST, data)
 
     def _register_webhook_api(self):
@@ -123,12 +132,11 @@ class RestApiProvider(ServiceProvider):
     async def conn_output_sink(self, output, output_wire_params, callback):       
         # api response or webhook -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
         self._new_requester_setup(output, output_wire_params, callback)
-        
 
     def conn_input_slot(self):
         """connect input interface on wire input slot """
         # TODO
-        raise NotImplementedError
+        pass
     
     def _get_request_attrs(self, interface, interface_params={}):
         """Read input or output interface config(swagger 2.0 standard compliant).
@@ -153,7 +161,11 @@ class RestApiProvider(ServiceProvider):
         url = "{}://{}{}".format(schemes[0], host, url)
         return request_action, url, body, headers, files
 
-    # TODO  disconn_output_sink
+    def disconn_output_sink(self, output):
+        """ disconnect wire output sink
+        """
+        # Delete timer handler
+        self.remove_request_timer_handler()
     
     async def emit_input_slot(self, input, payload):
         """send data to input slot, for rest api, invoide corotutine request.

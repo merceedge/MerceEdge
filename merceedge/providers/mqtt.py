@@ -7,10 +7,7 @@ from merceedge.service import (
     Service,
     ServiceCall
 )
-# from merceedge.core import (
-#     Input,
-#     Output
-# )
+
 from merceedge.const import (
     EVENT_EDGE_STOP
 )
