@@ -14,4 +14,6 @@ OpenAPI:
   swagger_path: "merceedge/tests/swagger_ref"
 
 wireload:
-  path: "tests/wireload"
+  paths: 
+    - "tests/wireload"
+    - "components"

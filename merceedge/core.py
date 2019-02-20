@@ -741,19 +741,24 @@ class Wire(Entity):
         self.input.del_wire(self.id)
         self.output.del_wire(self.id)
 
+
 class WireLoadFactory:
     def __init__(self, config):
         """
         config: user configuration
         """
         self._classes = {}
-        path = os.path.join(dir_path, config['wireload']['path'])
-        self._load(path)
+        paths = config['wireload']['paths']
+        self._load(paths)
 
-    def _load(self, path):
+    def _load(self, paths):
         """Walk throuth path and load WireLoad subclass
         """
-        self._classes = module_util.load_modules(path, WireLoad)
+        classes = {}
+        for path in paths:
+            path = os.path.join(dir_path, path)
+            classes = module_util.load_modules(path, WireLoad)
+            self._classes.update(classes)
         _LOGGER.debug("Load wireloads modules: {}".format(self._classes))
         
     def get_class(self, wireload_name):
