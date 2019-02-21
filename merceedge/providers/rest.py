@@ -28,7 +28,7 @@ from merceedge.service import (
     ServiceCall
 )
 from os.path import join
-dir_path = os.path.dirname(os.environ['MERCE_EDGE_HOME'])
+merce_edge_home = os.path.dirname(os.environ['MERCE_EDGE_HOME'])
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -142,7 +142,7 @@ class RestApiProvider(ServiceProvider):
         """Read input or output interface config(swagger 2.0 standard compliant).
         """
         swagger_filename = interface.get_attrs('swagger_ref')
-        swagger_file_fullpath = os.path.join(dir_path, self.config['OpenAPI']['swagger_path'], swagger_filename)
+        swagger_file_fullpath = os.path.join(merce_edge_home, self.config['OpenAPI']['swagger_path'], swagger_filename)
         # Get swagger parser instance
         swagger_parser = SwaggerParser(swagger_file_fullpath, use_example=False)
         

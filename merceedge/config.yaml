@@ -17,3 +17,7 @@ wireload:
   paths: 
     - "tests/wireload"
     - "components"
+
+protobuf:
+  generate_code_path: "merceedge/components/protobuf_gen"
+
