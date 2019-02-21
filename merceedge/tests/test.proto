@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package google.protobuf.internal;
+
+message ForeignMessage {
+  optional int32 c = 1;
+  repeated int32 d = 2;
+}

@@ -7,7 +7,7 @@ flask-sqlalchemy
 aiohttp
 pyfiglet
 voluptuous
-
+protobuf
 
 # swagger
 swagger-tester

@@ -79,6 +79,7 @@ def main():
     user_config = yaml_util.load_yaml(os.path.join(dir_path, 'config.yaml'))
     edge = MerceEdge(user_config=user_config)
     print("Load component tempalte path: {}".format(os.path.join(dir_path, 'tests', 'component_template')))
+    # TODO get component template from config.yml
     edge.load_local_component_templates(os.path.join(dir_path, 'tests', 'component_template'))
     # print(edge.component_templates)
     
