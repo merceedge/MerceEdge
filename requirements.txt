@@ -1,3 +1,4 @@
+setuptools
 pytz
 pyyaml
 paho-mqtt

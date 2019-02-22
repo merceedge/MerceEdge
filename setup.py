@@ -50,7 +50,9 @@ with open('requirements.txt', encoding='utf-8') as reqs:
 #     return paths
 
 # extra_files = package_files('merceedge/tests')
-
+packages = find_packages()
+print("*"*40)
+print(packages)
 setup(
     name='merceedge',
     version=merceedge.__version__,
@@ -58,9 +60,12 @@ setup(
     author=merceedge.__author__,
     author_email=merceedge.__contact__,
     url=merceedge.__homepage__,
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(
+        # exclude=['tests']
+    ),
     install_requires=install_requires,
-    package_data={'': ['config.yaml']},    
+    package_data={'': ['*.yaml', '*.yml']},    
+
     include_package_data=True,
     entry_points={
         'console_scripts': [
