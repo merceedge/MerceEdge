@@ -16,3 +16,14 @@ def load_yaml(fname):
         error = 'Error reading YAML configuration file {}'.format(fname)
         _LOGGER.exception(error)
         raise MerceEdgeError(error)
+
+
+def write_yaml(fname, yaml_dict):
+    """Write a yaml file from dict"""
+    try:
+        with open(fname, 'w', encoding='utf-8') as outfile:
+            yaml.dump(yaml_dict, outfile, default_flow_style=False)
+    except yaml.YAMLError:
+        error = 'Error write YAML configuration file {}'.format(fname)
+        _LOGGER.exception(error)
+        raise MerceEdgeError(error)

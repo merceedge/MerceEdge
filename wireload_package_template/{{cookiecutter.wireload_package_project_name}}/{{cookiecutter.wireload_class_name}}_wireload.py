@@ -1,15 +1,14 @@
 from merceedge.core import WireLoad
 
-class WireloadTemplate(WireLoad):
-    name = "wireload_template"
+class {{cookiecutter.wireload_class_name}}(WireLoad):
+    name = {{cookiecutter.wireload_class_name}}
     """
-    Version:
-    Author:
-    License:
-    Description:
+    Author: {{cookiecutter.author}}
+    License:{{cookiecutter.license}}
+    Description:{{cookiecutter.description}}
     """
     def __init__(self, edge, model_template_config, component_id=None, init_params={}):
-        super(WireloadTemplate, self).__init__(edge, model_template_config, component_id, init_params)
+        super({{cookiecutter.wireload_class_name}}, self).__init__(edge, model_template_config, component_id, init_params)
 
     def before_run_setup(self):
         # TODO

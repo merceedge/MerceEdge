@@ -1,4 +1,19 @@
-provider_path: "providers"
+component_template:
+  paths:
+    - "tests/component_template"
+
+provider:
+  paths: 
+    - "providers"
+
+wireload:
+  paths: 
+    - "tests/wireload"
+    - "components"
+
+formula:
+  paths:
+    - "tests/formula"
 
 mqtt:
   broker: 127.0.0.1
@@ -13,10 +28,7 @@ mqtt:
 OpenAPI:
   swagger_path: "merceedge/tests/swagger_ref"
 
-wireload:
-  paths: 
-    - "tests/wireload"
-    - "components"
+
 
 protobuf:
   generate_code_path: "merceedge/components/protobuf_gen"
