@@ -1,4 +1,6 @@
 from setuptools import setup, find_packages
+from setuptools.command.develop import develop
+from setuptools.command.install import install
 from codecs import open
 import os
 from os import path, walk
@@ -7,12 +9,7 @@ import yaml
 from shutil import copyfile
 
 import {{cookiecutter.wireload_package_project_name}}
-from merceedge.exceptions import MerceEdgeError
-from merceedge.util import prefix
-from merceedge.util.yaml import (
-    load_yaml,
-    write_yaml
-)
+
 here = path.abspath(path.dirname(__file__))
 
 
@@ -65,6 +62,12 @@ step 4
 
 """
 def config_install(is_develop=False):
+    from merceedge.exceptions import MerceEdgeError
+    from merceedge.util import prefix
+    from merceedge.util.yaml import (
+        load_yaml,
+        write_yaml
+    )
     # step 1
     try:
         merce_edge_home = os.path.dirname(os.environ['MERCE_EDGE_HOME'])

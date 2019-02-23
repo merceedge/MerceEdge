@@ -1,9 +1,11 @@
 from setuptools import setup, find_packages
+from setuptools.command.develop import develop
+from setuptools.command.install import install
 from codecs import open
-# import os
+import os
 from os import path, walk
-import glob
 import merceedge
+
 
 here = path.abspath(path.dirname(__file__))
 
@@ -28,31 +30,29 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 with open('requirements.txt', encoding='utf-8') as reqs:
     install_requires = [l for l in reqs.read().split('\n') if is_pkg(l)]
 
-# data_files = []
-# directories = glob.glob('merceedge/tests/')
-# print(directories)
-# for directory in directories:
-#     files = glob.glob(directory+'*')
-#     data_files.append((directory, files))
+# packages = find_packages()
+# print("*"*40)
+# print(packages)
+def setup_home_env(is_develop=False):
+    from merceedge.util import prefix
+    os.environ['MERCE_EDGE_HOME'] = prefix.binaries_directory(is_develop)
+    print("MERCE_EDGE_HOME: ", os.environ.get('MERCE_EDGE_HOME'))
 
-# print('*'*40)
-# print(data_files)
+class PostDevelopCommand(develop):
+    """Post-installation for development mode."""
+    def run(self):
+        # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
+        develop.run(self)
+        setup_home_env(is_develop=True)
 
-# def package_files(directory):
-#     paths = []
-#     print('='*30)
-#     for (filepath, directories, filenames) in walk(directory):
-#         for filename in filenames:
-#             # p = '/'.join(filepath.split('/')[2:])
-#             paths.append(path.join(filepath, filename))
-#     print('='*30)
-#     print(paths)
-#     return paths
 
-# extra_files = package_files('merceedge/tests')
-packages = find_packages()
-print("*"*40)
-print(packages)
+class PostInstallCommand(install):
+    """Post-installation for installation mode."""
+    def run(self):
+        # PUT YOUR POST-INSTALL SCRIPT HERE or CALL A FUNCTION
+        install.run(self)
+        setup_home_env(is_develop=False)
+
 setup(
     name='merceedge',
     version=merceedge.__version__,
@@ -60,13 +60,28 @@ setup(
     author=merceedge.__author__,
     author_email=merceedge.__contact__,
     url=merceedge.__homepage__,
-    packages=find_packages(
-        # exclude=['tests']
-    ),
+    packages=find_packages(),
     install_requires=install_requires,
-    package_data={'': ['*.yaml', '*.yml']},    
-
+    package_data={
+        '': [
+            '*.yaml', 
+            '*.yml',
+            'schema/*'
+        ], 
+        'merceedge.tests': [ 
+            '*',
+            'demo/*' 
+            'formula/*',
+            'swagger_ref/*',
+            'wireload/*',
+            'component_template/*'
+        ]
+    },    
     include_package_data=True,
+    cmdclass={
+        'develop': PostDevelopCommand,
+        'install': PostInstallCommand,
+    },
     entry_points={
         'console_scripts': [
             'edge=merceedge.__main__:main'
