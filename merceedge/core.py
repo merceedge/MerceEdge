@@ -146,7 +146,21 @@ class MerceEdge(object):
     def stop(self):
         fire_coroutine_threadsafe(self.async_stop(), self.loop)
 
-    def load_local_component_templates(self, component_template_path):
+    def load_local_component_templates(self, config_yml_dict):
+        # 1. Absolute path 2. MERCE_EDGE_HOME path
+        try:
+            component_template_paths = config_yml_dict['component_template']['paths']
+            for path in component_template_paths:
+                ab_path = ''
+                if path.startswith('/') or path[1]==":":
+                    ab_path = path
+                else:
+                    ab_path = os.path.join(os.environ['MERCE_EDGE_HOME'], 'merceedge', path)
+                self._load_local_component_templates(ab_path)
+        except KeyError:
+            raise MerceEdgeError('config.yaml foramt invalide')
+
+    def _load_local_component_templates(self, component_template_path):
         """Read local component templates path, generate component template objects
         """
         template_configs = []
@@ -156,7 +170,6 @@ class MerceEdge(object):
             # new_com_tmp = Component(com_tmp_yaml)
             self.component_templates[com_tmp_yaml['component']['name']] = com_tmp_yaml
             
-
     def _generate_component_instance(self, component_template_name, id=None, init_params=None):
         """Deepcopy component from component template
         """

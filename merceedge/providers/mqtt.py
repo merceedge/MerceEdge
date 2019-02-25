@@ -147,10 +147,10 @@ class MqttServiceProvider(ServiceProvider):
         if msg_topic is None or payload is None:
             return
 
-        async with self._paho_lock:
-            _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
-            await self.edge.async_add_job(
-                self._mqttc.publish, msg_topic, payload, qos, retain)
+        # async with self._paho_lock:
+        _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
+        await self.edge.async_add_job(
+            self._mqttc.publish, msg_topic, payload, qos, retain)
         
 
     def _build_publish_data(self, topic, qos, retain, payload=None):
@@ -180,10 +180,10 @@ class MqttServiceProvider(ServiceProvider):
         topic = output.get_attrs('topic')
         _LOGGER.debug("Subscribing to %s", topic)
 
-        async with self._paho_lock:
-            result = None  # type: int
-            result, _ = await self.edge.async_add_job(
-                self._mqttc.subscribe, topic, 0)
+        # async with self._paho_lock:
+        result = None  # type: int
+        result, _ = await self.edge.async_add_job(
+            self._mqttc.subscribe, topic, 0)
         
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
         # try:

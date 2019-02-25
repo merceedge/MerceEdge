@@ -73,14 +73,15 @@ def main():
     parser.add_argument('-f', '--formula', dest='formula', help='formula yml')
     args = parser.parse_args()
 
-
     # 0. Load local yaml component templates
-    print("Load user config file: {}".format(os.path.join(dir_path, 'config.yaml')))
-    user_config = yaml_util.load_yaml(os.path.join(dir_path, 'config.yaml'))
+    merceedge_home_path = os.environ['MERCE_EDGE_HOME']
+    print("Load user config file: {}".format(os.path.join(merceedge_home_path, 'merceedge', 'config.yaml')))
+    user_config = yaml_util.load_yaml(os.path.join(merceedge_home_path, 'merceedge', 'config.yaml'))
     edge = MerceEdge(user_config=user_config)
     print("Load component tempalte path: {}".format(os.path.join(dir_path, 'tests', 'component_template')))
-    # TODO get component template from config.yml
-    edge.load_local_component_templates(os.path.join(dir_path, 'tests', 'component_template'))
+    # Get component template load paths from config.yml
+
+    edge.load_local_component_templates(user_config)
     # print(edge.component_templates)
     
     # 1. setup services

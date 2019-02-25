@@ -244,8 +244,14 @@ class ServiceRegistry(object):
         })
 
         if not blocking:
-            self.edge.async_create_task(
-                self._safe_execute(handler, service_call))
+            # self.edge.async_create_task(
+            #     self._safe_execute(handler, service_call))
+            # return None
+            if handler.is_callback:
+                # print('service is_callback')
+                handler.func(service_call)
+            else:
+                self.edge.add_job(handler.func, service_call)
             return None
 
         try:
