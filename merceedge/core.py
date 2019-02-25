@@ -502,6 +502,9 @@ class MerceEdge(object):
         
         _LOGGER.debug('MerceEdge loop stop...')
         self.loop.stop()
+    
+    def wireload_emit_output_payload(self, output_name, emit_call, payload):
+        self.add_job(emit_call)
 
 
 class Entity(object):
@@ -789,6 +792,7 @@ class WireLoad(Component):
         self.input_q = asyncio.Queue(maxsize=3, loop=self.edge.loop)
         self.output_q = asyncio.Queue(maxsize=3, loop=self.edge.loop)
         self.is_stop = False
+        self.emit_output_call = self.emit_output_payload
 
     def before_run_setup(self):
         """Need implemented"""
@@ -800,7 +804,7 @@ class WireLoad(Component):
         
     async def put_output_payload(self, output_name, payload):
         await self.output_q.put((output_name, payload))
-        self.edge.add_job(self.emit_output_payload)
+        self.edge.wireload_emit_output_payload(output_name, self.emit_output_call, payload)
 
     def process(self, input_payload):
         """Need implemented"""
