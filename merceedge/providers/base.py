@@ -1,11 +1,11 @@
 
-# class Singleton(object):
-#     _instance = None
+class Singleton(object):
+    _instance = None
 
-#     def __new__(cls, edge, config):
-#         if not cls._instance:
-#             cls._instance = super(Singleton, cls).__new__(cls)  
-#         return cls._instance  
+    def __new__(cls, edge, config):
+        if not cls._instance:
+            cls._instance = super(Singleton, cls).__new__(cls)  
+        return cls._instance  
 
 
 class ServiceProvider(object):
@@ -20,10 +20,6 @@ class ServiceProvider(object):
     async def async_setup(self, edge, config):
         raise NotImplementedError
     
-    # def new_instance_setup(self, interface_config, is_settimer=False):
-    #     # default do nothing
-    #     pass
-
     async def conn_output_sink(self, output, output_wire_params, callback):
         # TODO mqtt client subscribe topic
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
