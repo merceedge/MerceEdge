@@ -330,7 +330,6 @@ class MerceEdge(object):
         while isinstance(check_target, functools.partial):
             check_target = check_target.func
         if asyncio.iscoroutine(check_target):
-            
             task = self.loop.create_task(target)  # type: ignore
         elif is_callback(check_target):
             self.loop.call_soon(target, *args)
