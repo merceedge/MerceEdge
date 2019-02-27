@@ -19,6 +19,9 @@ class ServiceProviderFactory(object):
                     ab_path = path
                 else:
                     ab_path = os.path.join(os.environ['MERCE_EDGE_HOME'], 'merceedge', path)
+                # test ab_path is exist
+                if not os.path.exists(ab_path):
+                    raise MerceEdgeError('Load provider failed!')
                 return ab_path
             except KeyError:
                 raise MerceEdgeError('Load provider failed!')
