@@ -1,20 +1,36 @@
 
-
+import os
 from merceedge.providers.base import ServiceProvider
 from merceedge.util.module import load_modules
+from merceedge.exceptions import MerceEdgeError
 
 class ServiceProviderFactory(object):
     provider_classes = {}
     providers = {}
     config = {}
     edge = None
+
     @staticmethod
-    def init(provider_path, edge, config):
-        ServiceProviderFactory.provider_classes = load_modules(path=provider_path, base_class=ServiceProvider)
+    def init(provider_paths, edge, config):
+        def get_valid_path(path):
+            try:
+                ab_path = ''
+                if path.startswith('/') or path[1] == ":":
+                    ab_path = path
+                else:
+                    ab_path = os.path.join(os.environ['MERCE_EDGE_HOME'], 'merceedge', path)
+                return ab_path
+            except KeyError:
+                raise MerceEdgeError('Load provider failed!')
+        
+        for path in provider_paths:
+            ab_path = get_valid_path(path)
+            print("Load service provider path: {}".format(ab_path))
+            classes = {}    
+            classes = load_modules(path=ab_path, base_class=ServiceProvider)
+            ServiceProviderFactory.provider_classes.update(classes)
         ServiceProviderFactory.config = config
         ServiceProviderFactory.edge = edge
-        # for name, provider_class in ServiceProviderFactory.provider_classes.items():
-        #     ServiceProviderFactory.providers[name] = provider_class(edge, config)
     
     @staticmethod 
     def get_provider(provider_name):
