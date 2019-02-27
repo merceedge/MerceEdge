@@ -10,7 +10,7 @@ from merceedge.exceptions import (
     ComponentNeedInitParamsError
 )
 
-merce_edge_home = os.path.dirname(os.environ['MERCE_EDGE_HOME'])
+merce_edge_home = os.environ['MERCE_EDGE_HOME']
 
 
 class ProtobufMessageDefineNotFound(MerceEdgeError):
@@ -47,16 +47,22 @@ class ProtobufWireLoad(WireLoad):
             raise ComponentNeedInitParamsError(self.__class__.__name__, 'proto_file_path')
 
         proto_include_path, proto_file = os.path.split(proto_file_path)
+        print("*"* 20)
+        print(proto_include_path, proto_file)
         # get genreate code path
         try:
             gen_code_path = self.edge.user_config["protobuf"]["generate_code_path"]
+            print(merce_edge_home)
             gen_code_dst_path = os.path.join(merce_edge_home, gen_code_path)
         except KeyError:
             pass
             #TODO raise wireload load error exception
         # genrete code
-        os.system("protoc -I={} --python_out={} {}".format(
-                                                proto_include_path, gen_code_dst_path, proto_file_path))
+        out = os.popen("protoc -I={} --python_out={} {}".format(
+                                                proto_include_path, gen_code_dst_path, proto_file_path)).read()
+        print(out)
+        # os.system("protoc -I={} --python_out={} {}".format(
+        #                                         proto_include_path, gen_code_dst_path, proto_file_path))
         # load messager class modules dict
         msg_classes = load_modules(gen_code_dst_path, Message)
 

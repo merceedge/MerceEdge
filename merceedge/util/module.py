@@ -18,7 +18,12 @@ def load_modules(path, base_class):
                 if inspect.isclass(obj):
                     if issubclass(obj, base_class) and name != base_class.__name__:
                         # print obj.plugin_name
-                        _modules[obj.name] = obj
+                        name = getattr(obj, "name", None)
+                        if name is not None:
+                            _modules[name] = obj
+                        else:
+                            name = obj.__name__
+                            _modules[name] = obj
         return _modules
 
     for dirpath, dirnames, filenames in os.walk(path):

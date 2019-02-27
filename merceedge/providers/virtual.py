@@ -29,7 +29,7 @@ class VirtualInterfaceProvider(ServiceProvider):
                                                      output.component.id,
                                                     output.name), callback)
 
-    async def conn_input_slot(self, input, conn_input_slot):
+    async def conn_input_slot(self, input, input_wire_params):
         """connect input interface on wire input slot """
         pass
 
