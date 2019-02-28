@@ -77,8 +77,10 @@ class ProtobufWireLoad(WireLoad):
     async def process(self, payload):
         output = None
         if isinstance(payload, dict): # dict
+            print("dict-----")
             output = self._dict_to_binary(payload)
-        elif isinstance(payload, str): # json string or binary message
+
+        elif isinstance(payload, str) or isinstance(payload, bytes): # json string or binary message
             try:
                 # test payload is a json string
                 json.loads(payload) 

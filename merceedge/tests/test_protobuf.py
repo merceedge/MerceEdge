@@ -12,6 +12,8 @@ protobuf_config = {
     }
 mock_edge = MockEdge(protobuf_config)
 
+binary_output_payload = None
+
 @pytest.mark.run(order=1)
 @gen_test_loop(mock_edge)
 async def test_protobuf_wireload():
@@ -28,10 +30,12 @@ async def test_protobuf_wireload():
                                   model_template_config=protobuf_template_yml,
                                   init_params=init_params)
 
-    binary_output_payload = None 
-    def get_binary_output(output_payload):
+
+
+    def get_binary_output(output_name, output_payload):
         global binary_output_payload
         binary_output_payload = output_payload
+        print(binary_output_payload)
 
 
     # mock output
@@ -39,16 +43,15 @@ async def test_protobuf_wireload():
     # Test json dict to protobuf binary
     # input
     input_payload = {
-        "ForeignMessage": 
-        {
             'c': 1,
             'd': [2, 3, 4]
-        }
     }
+
+    print("1111")
     await protobuf_wireload_obj.process(input_payload)
     
     # Test protobuf binary to json dict
-    def get_json_dict_output(output_payload):
+    def get_json_dict_output(output_name, output_payload):
         print("get_json_dict_output: -------", output_payload)
         assert output_payload == input_payload
 
