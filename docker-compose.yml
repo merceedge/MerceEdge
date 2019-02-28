@@ -29,6 +29,6 @@ services:
       - 8080
     ports:
       - "8080:8080"
-    command: python merceedge/__main__.py -f merceedge/tests/formula/rtmp_demo_formula.yaml
+    command: sh ./run_docker_demo.sh
     stdin_open: true
     tty: true
