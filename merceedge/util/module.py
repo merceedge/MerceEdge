@@ -10,7 +10,10 @@ def load_modules(path, base_class):
         sufix = os.path.splitext(filename)[1][1:]
         if sufix.lower() == "py":
             component = filename.split('.')
-            t = imp.find_module(component[0], [path])
+            try:
+                t = imp.find_module(component[0], [path])
+            except ImportError:
+                return _modules
 
             module = imp.load_module(component[0], t[0], t[1], t[2])
 
