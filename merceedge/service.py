@@ -6,7 +6,6 @@ import asyncio
 from async_timeout import timeout
 from types import MappingProxyType
 import voluptuous as vol
-import logging
 import merceedge.util as util
 
 from merceedge.const import (
@@ -37,7 +36,13 @@ from merceedge.exceptions import (
 if TYPE_CHECKING:
     from merceedge.core import MerceEdge
 
-_LOGGER = logging.getLogger(__name__)
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
+
+_LOGGER = logger_code
 # How long we wait for the result of a service call
 SERVICE_CALL_LIMIT = 10  # seconds
 

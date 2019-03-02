@@ -1,35 +1,26 @@
+OpenAPI:
+  swagger_path: merceedge/tests/swagger_ref
 component_template:
   paths:
-    - "tests/component_template"
-
-provider:
-  paths: 
-    - "providers"
-
-wireload:
-  paths: 
-    - "tests/wireload"
-    - "components"
-
+  - tests/component_template
 formula:
   paths:
-    - "tests/formula"
-
+  - tests/formula
 mqtt:
-  broker: 127.0.0.1
-  port: 1883
-  # client_id: merceedge001
+  broker: mosquitto
   keepalive: 60
-  # username: 
-  # password:
-  # certificate:
+  port: 1883
   protocol: 3.1.1
-
-OpenAPI:
-  swagger_path: "merceedge/tests/swagger_ref"
-
-
-
 protobuf:
-  generate_code_path: "merceedge/components/protobuf_gen"
+  generate_code_path: merceedge/components/protobuf_gen
 
+# provider_path: providers
+provider:
+  paths:
+    - providers
+
+wireload:
+  paths:
+  - tests/wireload
+  - components
+wireload_package_template: test config value

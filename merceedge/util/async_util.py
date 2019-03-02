@@ -1,6 +1,5 @@
 import concurrent.futures
 import threading
-import logging
 from asyncio import coroutines
 from asyncio.events import AbstractEventLoop
 from asyncio.futures import Future
@@ -11,6 +10,11 @@ from asyncio import ensure_future
 from typing import Any, Union, Coroutine, Callable, Generator, TypeVar, \
                    Awaitable
 
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
 
 # pylint: disable=invalid-name
 T = TypeVar('T')
@@ -19,7 +23,7 @@ CALLBACK_TYPE = Callable[[], None]
 # pylint: enable=invalid-name
 
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logger_code
 
 try:
     # pylint: disable=invalid-name

@@ -1,4 +1,3 @@
-import logging
 import asyncio
 import json
 from merceedge.providers.base import ServiceProvider
@@ -21,8 +20,13 @@ from merceedge.util.async_util import (
     CALLBACK_TYPE,
     T
 )
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logger_code
 CONF_BROKER = 'broker'
 CONF_PORT = 'port'
 CONF_CLIENT_ID = 'client_id'
@@ -148,7 +152,7 @@ class MqttServiceProvider(ServiceProvider):
             return
 
         # async with self._paho_lock:
-        _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
+        # _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
         await self.edge.async_add_job(
             self._mqttc.publish, msg_topic, payload, qos, retain)
         

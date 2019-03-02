@@ -1,9 +1,13 @@
 import yaml
-import logging
 
 from merceedge.exceptions import MerceEdgeError
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = logger_code
 
 def load_yaml(fname):
     """Load a YAML file."""

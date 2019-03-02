@@ -1,4 +1,3 @@
-import logging
 import threading
 import enum
 import os
@@ -24,6 +23,7 @@ from typing import (  # noqa: F401 pylint: disable=unused-import
     TYPE_CHECKING, Awaitable, Iterator)
 from os.path import join
 dir_path = os.path.dirname(os.path.realpath(__file__))
+
 
 import merceedge.util as util
 import merceedge.util.dt as dt_util
@@ -64,12 +64,16 @@ from merceedge.api_server.models import (
     ComponentDBModel, 
     WireDBModel
 )
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
 
 DOMAIN = "merceedge"
 
-logging.basicConfig()
-_LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
+_LOGGER = logger_code
+
 
 class MerceEdge(object):
     """Root object of Merce Edge node"""
@@ -1077,6 +1081,6 @@ def _async_create_timer(edge: MerceEdge) -> None:
             handle.cancel()
 
     edge.bus.async_listen_once(EVENT_EDGE_STOP, stop_timer)
-
+    
     _LOGGER.info("Timer:starting")
     schedule_tick(dt_util.utcnow())
