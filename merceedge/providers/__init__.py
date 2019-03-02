@@ -4,6 +4,14 @@ from merceedge.providers.base import ServiceProvider
 from merceedge.util.module import load_modules
 from merceedge.exceptions import MerceEdgeError
 
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
+
+_LOGGER = logger_code
+
 class ServiceProviderFactory(object):
     provider_classes = {}
     providers = {}
@@ -28,7 +36,7 @@ class ServiceProviderFactory(object):
         
         for path in provider_paths:
             ab_path = get_valid_path(path)
-            print("Load service provider path: {}".format(ab_path))
+            _LOGGER.info("Load service provider path: {}".format(ab_path))
             classes = {}    
             classes = load_modules(path=ab_path, base_class=ServiceProvider)
             ServiceProviderFactory.provider_classes.update(classes)

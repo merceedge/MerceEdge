@@ -5,7 +5,13 @@ import time
 
 from merceedge.providers.base import ServiceProvider
 from merceedge.const import EVENT_EDGE_STOP
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
 
+_LOGGER = logger_code
 
 class RTMPProvider(ServiceProvider):
     """ Receive video stream from rtmp url and convert to video frame data.
@@ -20,7 +26,7 @@ class RTMPProvider(ServiceProvider):
         self.t = None
 
     async def async_setup(self, edge, config):
-        print("async setup: ", self.name)
+        _LOGGER.debug("async setup: {}".format(self.name))
         self.edge.bus.async_listen_once(EVENT_EDGE_STOP, self.async_stop_rtmp)
     
     async def async_stop_rtmp(self, event):

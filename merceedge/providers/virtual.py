@@ -23,7 +23,7 @@ class VirtualInterfaceProvider(ServiceProvider):
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
         pass
         # 虚拟连线输出事件监听注册
-        print("virtual conn_output_sink***********")
+        # print("virtual conn_output_sink***********")
         self.output = output
         self.edge.bus.async_listen("{}_{}_{}".format(self.VIRTUAL_WIRE_EVENT, 
                                                      output.component.id,

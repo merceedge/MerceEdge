@@ -11,10 +11,10 @@ LOG_CONFIG = {
     "formatters": {
         "console": {
             '()': 'colorlog.ColoredFormatter',
-            'format': "%(log_color)s[%(levelname)s] %(message)s",
+            'format': "%(log_color)s[%(asctime)s] %(levelname)s [%(filename)s->%(funcName)s:%(lineno)s] %(message)s",
             "datefmt": "%Y/%m/%d %H:%M:%S",
             "log_colors": {
-                'DEBUG': 'white',
+                'DEBUG': 'cyan',
                 'INFO': 'green',
                 'WARNING': 'yellow',
                 'ERROR': 'red',
@@ -44,35 +44,35 @@ LOG_CONFIG = {
             "class": "logging.handlers.TimedRotatingFileHandler",
             "filename": os.path.join(BASE_DIR, "logs/merceedge.access.log"),
             "when": "midnight",
-            "backupCount": 90,  # 3 months
+            "backupCount": 90,
             "formatter": "timeRotation",
         },
         "code": {
             "level": "DEBUG",
             "class": "logging.handlers.TimedRotatingFileHandler",
             "filename": os.path.join(BASE_DIR, "logs/merceedge.code.log"),
-            "backupCount": 90,  # Store up to three files
+            "backupCount": 90,
             "formatter": "code",
         }
     },
     "loggers": {
         "merceedge.access": {
-            "handlers": ["console", "access"],
-            "level": "INFO",
+            "handlers": ["access"],
+            "level": "DEBUG",
             "color": True,
             "propagate": False
         },
         "code": {
-            "handlers": ["code", 'console'],
+            "handlers": ['code', "console"],
             "level": "DEBUG",
             "color": True,
-            "propagate": True
+            "propagate": False
         },
         "console": {
             "handlers": ["console"],
             "level": "DEBUG",
             "color": True,
-            "propagate": True
+            "propagate": False
         },
 
     }

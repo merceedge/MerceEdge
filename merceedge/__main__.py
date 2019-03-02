@@ -19,6 +19,13 @@ from merceedge.core import (
 from merceedge.providers import ServiceProviderFactory
 from merceedge.util import yaml as yaml_util
 from merceedge.api_server import app as api_server
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
+
+_LOGGER = logger_code
 
 def set_loop() -> None:
     """Attempt to use uvloop."""
@@ -75,10 +82,10 @@ def main():
 
     # 0. Load local yaml component templates
     merceedge_home_path = os.environ['MERCE_EDGE_HOME']
-    print("Load user config file: {}".format(os.path.join(merceedge_home_path, 'merceedge', 'config.yaml')))
+    _LOGGER.info("Load user config file: {}".format(os.path.join(merceedge_home_path, 'merceedge', 'config.yaml')))
     user_config = yaml_util.load_yaml(os.path.join(merceedge_home_path, 'merceedge', 'config.yaml'))
     edge = MerceEdge(user_config=user_config)
-    print("Load component tempalte path: {}".format(os.path.join(dir_path, 'tests', 'component_template')))
+    _LOGGER.info("Load component tempalte path: {}".format(os.path.join(dir_path, 'tests', 'component_template')))
     # Get component template load paths from config.yml
 
     edge.load_local_component_templates(user_config)

@@ -124,7 +124,7 @@ class MerceEdge(object):
             self.loop.run_forever()
         except KeyboardInterrupt:
             # Optionally show a message if the shutdown may take a while
-            print("Attempting graceful shutdown, press Ctrl+C again to exit…", flush=True)
+            _LOGGER.info("Attempting graceful shutdown, press Ctrl+C again to exit…", flush=True)
 
             # Do not show `asyncio.CancelledError` exceptions during shutdown
             # (a lot of these may be generated, skip this if you prefer to see them)
@@ -214,8 +214,8 @@ class MerceEdge(object):
         wire = Wire(edge=self, output_sink=output_sink, input_slot=input_slot, id=wire_id)
         wire.set_input_params(output_params)
         wire.set_output_params(input_params)
-        print(wire.output_sink.name, wire.output_sink, output_params, wire.output_sink.attrs)
-        print(wire.input_slot.name, wire.input_slot, input_params, wire.input_slot.attrs)
+        # print(wire.output_sink.name, wire.output_sink, output_params, wire.output_sink.attrs)
+        # print(wire.input_slot.name, wire.input_slot, input_params, wire.input_slot.attrs)
 
         self.wires[wire.id] = wire
         
@@ -420,7 +420,7 @@ class MerceEdge(object):
             pending = [task for task in self._pending_tasks
                        if not task.done()]
             self._pending_tasks.clear()
-            print(pending)
+            _LOGGER.debug(pending)
             if pending:
                 _LOGGER.debug('pending')
                 await asyncio.wait(pending)
@@ -441,10 +441,10 @@ class MerceEdge(object):
         await self.async_start()
         async_register_signal_handling(self)
 
-        print("self._stopped.wait() start")
+        _LOGGER.debug("self._stopped.wait() start")
         print(self._stopped)
         await self._stopped.wait()
-        print("self._stopped.wait() stop")
+        _LOGGER.debug("self._stopped.wait() stop")
         
         return self.exit_code
     
@@ -633,7 +633,6 @@ class Output(Interface):
         """
         self.provider.disconn_output_sink(self)
         del self.output_wires[wire_id]
-        print("output wires: {}".format(self.output_wires))
     
     def _init_provider(self):
         try:
