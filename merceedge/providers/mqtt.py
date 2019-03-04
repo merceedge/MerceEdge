@@ -60,7 +60,6 @@ class MqttServiceProvider(ServiceProvider):
     MQTT_MSG_RCV_EVENT = 'mqtt_msg_rcv'
     
     def __init__(self, edge, config):
-        # TODO broker_ip broker_port username password etc.
         self._paho_lock = asyncio.Lock(loop=edge.loop)
         super(MqttServiceProvider, self).__init__(edge, config)
         
@@ -68,16 +67,16 @@ class MqttServiceProvider(ServiceProvider):
         self.edge = edge
         # TODO need validate config
         
-        # TODO MQTT client setup
+        # MQTT client setup
         conf = self.config[self.DOMAIN]
         broker = attrs.get(CONF_BROKER, conf[CONF_BROKER])
-        port = util.convert(attrs.get(CONF_PORT), int, DEFAULT_PORT)
+        port = util.convert(attrs.get(CONF_PORT), int, conf.get(CONF_PORT, DEFAULT_PORT))
         client_id = util.convert(attrs.get(CONF_CLIENT_ID), str, conf.get(CONF_CLIENT_ID))
-        keepalive = util.convert(attrs.get(CONF_KEEPALIVE), int, DEFAULT_KEEPALIVE)
-        username = util.convert(attrs.get(CONF_USERNAME), str)
-        password = util.convert(attrs.get(CONF_PASSWORD), str)
-        certificate = util.convert(attrs.get(CONF_CERTIFICATE), str)
-        protocol = util.convert(attrs.get(CONF_PROTOCOL), str, DEFAULT_PROTOCOL)
+        keepalive = util.convert(attrs.get(CONF_KEEPALIVE), int, conf.get(CONF_KEEPALIVE, DEFAULT_KEEPALIVE))
+        username = util.convert(attrs.get(CONF_USERNAME), str, conf.get(CONF_USERNAME))
+        password = util.convert(attrs.get(CONF_PASSWORD), str, conf.get(CONF_PASSWORD))
+        certificate = util.convert(attrs.get(CONF_CERTIFICATE), str, conf.get(CONF_CERTIFICATE))
+        protocol = util.convert(attrs.get(CONF_PROTOCOL), str, conf.get(CONF_PROTOCOL, DEFAULT_PROTOCOL))
 
         if protocol not in (PROTOCOL_31, PROTOCOL_311):
             _LOGGER.error('Invalid protocol specified: %s. Allowed values: %s, %s',
@@ -152,7 +151,7 @@ class MqttServiceProvider(ServiceProvider):
             return
 
         # async with self._paho_lock:
-        # _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
+        _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
         await self.edge.async_add_job(
             self._mqttc.publish, msg_topic, payload, qos, retain)
         
@@ -174,26 +173,19 @@ class MqttServiceProvider(ServiceProvider):
         pass
 
     def _mqtt_on_message(self, _mqttc, _userdata, msg):
-        # TODO need fix this proto code
         self.edge.bus.fire(self.event_type, msg.payload.decode('utf-8'))
-    
 
     async def conn_output_sink(self, output, output_wire_params, callback):                       
-        # TODO mqtt client subscribe topic (need fix this proto code)
-        # self._mqttc.subscribe(output.get_attrs('topic'), 0)
-        topic = output.get_attrs('topic')
+        # mqtt client subscribe topic 
+        qos = output.get_attrs(ATTR_QOS, DEFAULT_QOS)
+        topic = output.get_attrs(ATTR_TOPIC)
         _LOGGER.debug("Subscribing to %s", topic)
 
         # async with self._paho_lock:
-        result = None  # type: int
         result, _ = await self.edge.async_add_job(
-            self._mqttc.subscribe, topic, 0)
+            self._mqttc.subscribe, topic, qos)
         
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  
-        # try:
-        #     mqtt_listener_num = await self.edge.bus.listeners[self.MQTT_MSG_RCV_EVENT]
-        # except KeyError:
-        #     # TODO log no need listen MQTT_MSG_RCV_EVENT msg again
         event_type = "{}_{}".format(self.MQTT_MSG_RCV_EVENT, output.id)
         self.event_type = event_type
         self.edge.bus.listen(event_type, callback)
