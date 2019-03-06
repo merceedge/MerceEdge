@@ -108,3 +108,9 @@ venv.bak/
 
 #visual code
 .vscode/
+
+#protobuf gen
+merceedge/components/protobuf_gen/*
+
+#user config backup
+merceedge/config.yaml.bak

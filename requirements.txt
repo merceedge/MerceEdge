@@ -13,9 +13,7 @@ protobuf
 
 
 # swagger
-swagger-tester
-swagger-parser>=0.1.11
-connexion>=1.0.121
+pyswagger
 requests~=2.11
 
 #rtmp
