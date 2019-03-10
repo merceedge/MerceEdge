@@ -36,38 +36,6 @@ logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
-ATTR_URL = 'url'
-ATTR_PAYLOAD = 'payload'
-ATTR_HEADERS = 'headers'
-ATTR_ACTION = 'action'
-ATTR_ACTION = 'files'
-
-_HTTP_METHODS = ['put', 'post', 'get', 'delete', 'options', 'head', 'patch']
-
-
-async def async_request_service(call: ServiceCall):
-    """Handle REST API request service calls"""
-    # print("_request_service!!!")
-    url = call.data.get(ATTR_URL)
-    body = call.data.get(ATTR_PAYLOAD) or {}
-    headers = call.data.get(ATTR_HEADERS) or {}
-    action = call.data.get(ATTR_ACTION)
-    # request
-    api_client = requests
-    method = _get_method_from_action(api_client, action)
-    response =  method(url=url, 
-                    headers=dict(headers),
-                    data=body)
-    logger.info(u"request service response: {} {}".format(response.status_code, response.text))
-
-def _get_method_from_action(client, action):
-    """ Get aiohttp action request method
-    """
-    error_msg = "Action '{0}' is not recognized; needs to be one of {1}.".format(action, str(_HTTP_METHODS))
-    assert action in _HTTP_METHODS, error_msg
-
-    return client.__getattribute__(action)
-
 
 class RestApiProvider(ServiceProvider):
     DOMAIN = 'swagger2.0'
@@ -85,14 +53,8 @@ class RestApiProvider(ServiceProvider):
         super(RestApiProvider, self).__init__(edge, config)
     
     async def async_setup(self, edge, config):
-        #TODO swagger 2.0 security config
         # setup request timer
         self.remove_request_timer_handler = self.edge.bus.async_listen(EVENT_TIME_CHANGED, self.request_timer_handler)
-
-        # setup request service
-        self.edge.services.async_register(self.DOMAIN, 
-                                          self.SERVICE_REST_REQUEST, 
-                                          async_request_service)
 
         self.edge.bus.async_listen_once(EVENT_EDGE_STOP, self.async_stop_rest)
     

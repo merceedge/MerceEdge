@@ -24,12 +24,27 @@ MerceEdge可以：
     <img src="https://github.com/merceedge/resources/blob/master/MerceEdge_models.png?raw=true", width="600px">
 </p>
 
+MerceEdge的核心抽象模型包括：
 
-    * 组件（component）
-    * 接口（interface）
-    * 连线（wire）
-    * 连线负载（wire load）
-    * 方案（formula）
+* 组件（component）
+
+组件是一种表示真实物理IOT设备的映射，用户不需要任何代码实现。组件依赖接口来向MerceEdge内部输入和输出数据。
+
+* 接口（interface）
+
+接口分为输入（Input）和输出（Output），接口即可以反映各种IOT通信协议，也可以作为MerceEdge内部Wireload之间通信。
+
+*  连线（wire）
+
+连线连接各种不同的接口，让IOT异构协议通过MerceEdge内部通信能够融合在一起。
+
+*  连线负载（wire load）
+
+连线负载是一种由特殊的组件，负责处理连线上流动的数据。
+
+* 方案（formula）
+
+方案是组织组件、接口、连线、连线负载的配置。
 
 
 ## 安装和运行

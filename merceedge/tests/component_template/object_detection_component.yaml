@@ -4,7 +4,7 @@ component:
   vendor: Merce project group
   virtual: true
   
-  parameters: # TODO
+  parameters:
     min_score_thresh: 
       type: float
       default: 0.5
@@ -19,7 +19,7 @@ component:
     - name: object_detection_result
       protocol:
         name: virtual
-      type: json   # TODO parser
+      type: json  
     - name: rtmp_bytes
       protocol:
         name: virtual
@@ -28,7 +28,7 @@ component:
       protocol:
         name: virtual
       type: json
-      propreties: # TODO parser
+      propreties:
         height: int
         width: int
 
