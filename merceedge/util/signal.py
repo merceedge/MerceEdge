@@ -1,10 +1,15 @@
 """Signal handling related helpers."""
-import logging
 import signal
 import sys
-from merceedge.util.async_util import callback
 
-_LOGGER = logging.getLogger(__name__)
+from merceedge.util.async_util import callback
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
+
+_LOGGER = logger_code
 
 
 @callback
@@ -31,7 +36,7 @@ def async_register_signal_handling(edge) -> None:
             except ValueError:
                 _LOGGER.warning("Could not bind to SIGHUP")
 
-    
+    # TODO windows stop
     # else:
     #     old_sigterm = None
     #     old_sigint = None

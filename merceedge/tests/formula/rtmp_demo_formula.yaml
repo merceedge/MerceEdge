@@ -21,8 +21,9 @@ wires:
       component_id: rtmp_component_test
       output: rtmp_video_stream
       parameters: 
-        rtmp_url: "rtmp://change_your_rtmp_path_here"
+        # rtmp_url: "rtmp://change_your_rtmp_path_here"
         # rtmp_url: "/local_path/test_video.mp4"
+        rtmp_url: "/home/MerceEdge/SampleVideo_720x480_30mb.mp4"
     input_slot:
       component_id: object_detection_test
       input: rtmp

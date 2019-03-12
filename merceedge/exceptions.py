@@ -47,3 +47,14 @@ class ComponentTemplateNotFound(MerceEdgeError):
         super().__init__(
             self, "Component template {} not found".format(component_template))
         self.component_template = component_template
+
+
+class ComponentNeedInitParamsError(MerceEdgeError):
+    """ Raised when a component needed parameter not found in formula file.
+    """
+    def __init__(self, cls_name, param_key: str) -> None:
+        """Initialize error."""
+        super().__init__(
+            self, "Component  {} need init parameter {}".format(cls_name, param_key))
+        self.cls_name = cls_name
+        self.param_key = param_key

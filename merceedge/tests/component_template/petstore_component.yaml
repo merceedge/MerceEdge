@@ -9,5 +9,10 @@ component:
         schema_type: swagger
         swagger_ref: petstore_api.yaml
         operationId: "findPetsByTags"
+        # TODO 
+        security:
+          basicAuth: xxxxx  # basic auth
+          api_key: 12312312312312312313q # api key auth
+          petstore_auth: 12334546556521123fsfss # oauth2
 
   description: swagger 2.0 standard REST API component.

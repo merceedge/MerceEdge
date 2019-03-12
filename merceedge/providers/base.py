@@ -8,7 +8,7 @@ class Singleton(object):
         return cls._instance  
 
 
-class ServiceProvider(Singleton):
+class ServiceProvider(object):
     def __init__(self, edge, config):
         """
         edge: MerceEdge instance
@@ -20,10 +20,6 @@ class ServiceProvider(Singleton):
     async def async_setup(self, edge, config):
         raise NotImplementedError
     
-    # def new_instance_setup(self, interface_config, is_settimer=False):
-    #     # default do nothing
-    #     pass
-
     async def conn_output_sink(self, output, output_wire_params, callback):
         # TODO mqtt client subscribe topic
         # Subscribe callback -> EventBus -> Wire input (output sink ) -> EventBus(Send) -> Service provider  

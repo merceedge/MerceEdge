@@ -18,13 +18,33 @@ MerceEdge可以：
 
 围绕在我们身边的不同协议的物联网（IOT）设备越来越多，但不同协议类型的、遗留的、不同厂家的设备经常无法兼容，我们希望能够提供一种运行在用户本地，具有快速反应的、安全的、易用的连接服务，让用户能够根据自己的需要，灵活组织不同的设备交互，完成特定的功能。
 
-## 术语表 (TODO)
+## 抽象模型
+</a>
+<p align="center">
+    <img src="https://github.com/merceedge/resources/blob/master/MerceEdge_models.png?raw=true", width="600px">
+</p>
 
-    * 组件（component）
-    * 接口（interface）
-    * 连线（wire）
-    * 连线负载（wire Load）
-    * 方案（formula）
+MerceEdge的核心抽象模型包括：
+
+* 组件（component）
+
+组件是一种表示真实物理IOT设备的映射，用户不需要任何代码实现。组件依赖接口来向MerceEdge内部输入和输出数据。
+
+* 接口（interface）
+
+接口分为输入（Input）和输出（Output），接口即可以反映各种IOT通信协议，也可以作为MerceEdge内部Wireload之间通信。
+
+*  连线（wire）
+
+连线连接各种不同的接口，让IOT异构协议通过MerceEdge内部通信能够融合在一起。
+
+*  连线负载（wire load）
+
+连线负载是一种由特殊的组件，负责处理连线上流动的数据。
+
+* 方案（formula）
+
+方案是组织组件、接口、连线、连线负载的配置。
 
 
 ## 安装和运行
@@ -97,7 +117,22 @@ MerceEdge可以：
     <img src="https://github.com/merceedge/resources/blob/master/object_detection_demo_record.gif?raw=true", width="360px">
 </p>
 
-### 从docker运行(TODO)
+
+### 从docker运行
+  1. 安装[docker](https://docs.docker.com/install/overview/)和[docker-compose](https://docs.docker.com/compose/install/)
+  2.   git clone源代码
+
+    git clone https://github.com/merceedge/MerceEdge.git .
+    cd MerceEdge
+
+  3. Build docker merceedge镜像
+
+    docker-compose build
+
+  4.  运行
+
+    docker-compose up
+
 
 ## 例子
   * 边缘计算的例子

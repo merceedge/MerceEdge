@@ -18,7 +18,11 @@ MerceEdge can:
 
 There are more and more Internet of Things (IOT) devices around different protocols around us, but different protocol types, legacy, and different vendors' devices are often incompatible. We hope to provide a kind of operation that is local to the user and has a quick response. The secure, easy-to-use connection service allows users to flexibly organize different device interactions and perform specific functions according to their needs.
 
-## Glossary (TODO)
+## Abstrat model
+</a>
+<p align="center">
+    <img src="https://github.com/merceedge/resources/blob/master/MerceEdge_models.png?raw=true", width="700px">
+</p>
 
     * Component
     * Interface
@@ -95,7 +99,21 @@ Open another terminal window, and also use the MerceEdge virtualenv set up earli
     <img src="https://github.com/merceedge/resources/blob/master/object_detection_demo_record.gif?raw=true", width="360px">
 </p>
 
-### Run from docker (TODO)
+### Run from docker 
+
+  1. Intall [docker](https://docs.docker.com/install/overview/) and [docker-compose](https://docs.docker.com/compose/install/)
+  2.   git clone MerceEdge source code
+
+    git clone https://github.com/merceedge/MerceEdge.git .
+    cd MerceEdge
+
+  3. Build docker merceedge image
+
+    docker-compose build
+
+  4.  run
+
+    docker-compose up
 
 ## Demo
   * Demo of edge calculation

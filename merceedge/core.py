@@ -1,4 +1,3 @@
-import logging
 import threading
 import enum
 import os
@@ -24,6 +23,7 @@ from typing import (  # noqa: F401 pylint: disable=unused-import
     TYPE_CHECKING, Awaitable, Iterator)
 from os.path import join
 dir_path = os.path.dirname(os.path.realpath(__file__))
+
 
 import merceedge.util as util
 import merceedge.util.dt as dt_util
@@ -64,12 +64,16 @@ from merceedge.api_server.models import (
     ComponentDBModel, 
     WireDBModel
 )
+from merceedge.settings import (
+    logger_access,
+    logger_code,
+    logger_console
+)
 
 DOMAIN = "merceedge"
 
-logging.basicConfig()
-_LOGGER = logging.getLogger(__name__)
-_LOGGER.setLevel(logging.DEBUG)
+_LOGGER = logger_code
+
 
 class MerceEdge(object):
     """Root object of Merce Edge node"""
@@ -116,9 +120,29 @@ class MerceEdge(object):
         # Run forever
         try:
             # Block until stopped
-            _LOGGER.info("Starting MerceEdge core loop start")
+            _LOGGER.info("Starting MerceEdge core loop")
             self.loop.run_forever()
-      
+        except KeyboardInterrupt:
+            # Optionally show a message if the shutdown may take a while
+            _LOGGER.info("Attempting graceful shutdown, press Ctrl+C again to exit…", flush=True)
+
+            # Do not show `asyncio.CancelledError` exceptions during shutdown
+            # (a lot of these may be generated, skip this if you prefer to see them)
+            def shutdown_exception_handler(loop, context):
+                if "exception" not in context \
+                or not isinstance(context["exception"], asyncio.CancelledError):
+                    loop.default_exception_handler(context)
+            self.loop.set_exception_handler(shutdown_exception_handler)
+
+            # Handle shutdown gracefully by waiting for all tasks to be cancelled
+            tasks = asyncio.gather(*asyncio.Task.all_tasks(loop=self.loop), loop=self.loop, return_exceptions=True)
+            tasks.add_done_callback(lambda t: self.loop.stop())
+            tasks.cancel()
+
+            # Keep the event loop running until it is either destroyed or all
+            # tasks have really terminated
+            while not tasks.done() and not self.loop.is_closed():
+                self.loop.run_forever()
         finally:
             self.loop.close()
         return self.exit_code
@@ -126,7 +150,21 @@ class MerceEdge(object):
     def stop(self):
         fire_coroutine_threadsafe(self.async_stop(), self.loop)
 
-    def load_local_component_templates(self, component_template_path):
+    def load_local_component_templates(self, config_yml_dict):
+        # 1. Absolute path 2. MERCE_EDGE_HOME path
+        try:
+            component_template_paths = config_yml_dict['component_template']['paths']
+            for path in component_template_paths:
+                ab_path = ''
+                if path.startswith('/') or path[1]==":":
+                    ab_path = path
+                else:
+                    ab_path = os.path.join(os.environ['MERCE_EDGE_HOME'], 'merceedge', path)
+                self._load_local_component_templates(ab_path)
+        except KeyError:
+            raise MerceEdgeError('config.yaml foramt invalide')
+
+    def _load_local_component_templates(self, component_template_path):
         """Read local component templates path, generate component template objects
         """
         template_configs = []
@@ -136,7 +174,6 @@ class MerceEdge(object):
             # new_com_tmp = Component(com_tmp_yaml)
             self.component_templates[com_tmp_yaml['component']['name']] = com_tmp_yaml
             
-
     def _generate_component_instance(self, component_template_name, id=None, init_params=None):
         """Deepcopy component from component template
         """
@@ -177,8 +214,8 @@ class MerceEdge(object):
         wire = Wire(edge=self, output_sink=output_sink, input_slot=input_slot, id=wire_id)
         wire.set_input_params(output_params)
         wire.set_output_params(input_params)
-        print(wire.output_sink.name, wire.output_sink, output_params, wire.output_sink.attrs)
-        print(wire.input_slot.name, wire.input_slot, input_params, wire.input_slot.attrs)
+        # print(wire.output_sink.name, wire.output_sink, output_params, wire.output_sink.attrs)
+        # print(wire.input_slot.name, wire.input_slot, input_params, wire.input_slot.attrs)
 
         self.wires[wire.id] = wire
         
@@ -297,7 +334,6 @@ class MerceEdge(object):
         while isinstance(check_target, functools.partial):
             check_target = check_target.func
         if asyncio.iscoroutine(check_target):
-            
             task = self.loop.create_task(target)  # type: ignore
         elif is_callback(check_target):
             self.loop.call_soon(target, *args)
@@ -384,7 +420,7 @@ class MerceEdge(object):
             pending = [task for task in self._pending_tasks
                        if not task.done()]
             self._pending_tasks.clear()
-            print(pending)
+            _LOGGER.debug(pending)
             if pending:
                 _LOGGER.debug('pending')
                 await asyncio.wait(pending)
@@ -405,10 +441,10 @@ class MerceEdge(object):
         await self.async_start()
         async_register_signal_handling(self)
 
-        print("self._stopped.wait() start")
+        _LOGGER.debug("self._stopped.wait() start")
         print(self._stopped)
         await self._stopped.wait()
-        print("self._stopped.wait() stop")
+        _LOGGER.debug("self._stopped.wait() stop")
         
         return self.exit_code
     
@@ -469,6 +505,9 @@ class MerceEdge(object):
         
         _LOGGER.debug('MerceEdge loop stop...')
         self.loop.stop()
+    
+    def wireload_emit_output_payload(self, output_name, emit_call, payload):
+        self.add_job(emit_call)
 
 
 class Entity(object):
@@ -594,7 +633,6 @@ class Output(Interface):
         """
         self.provider.disconn_output_sink(self)
         del self.output_wires[wire_id]
-        print("output wires: {}".format(self.output_wires))
     
     def _init_provider(self):
         try:
@@ -602,6 +640,7 @@ class Output(Interface):
             _LOGGER.debug("Output {} load provider {}".format(self.name, self.provider))
             # if self.provider:
             #     self.provider.new_instance_setup(self.name, self.attrs, True)
+            # self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         except KeyError as e:
             # log no such provider key error
             _LOGGER.error("Cannot load {} provider".format(self.protocol))
@@ -609,15 +648,16 @@ class Output(Interface):
     
     async def conn_output_sink(self, output_wire_params={}):
         """ register EventBus listener"""
+        self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         await self.provider.conn_output_sink(output=self, 
                                        output_wire_params=output_wire_params,
                                        callback=self.output_sink_callback)
     
-    def output_sink_callback(self, payload):
+    def output_sink_callback(self, event):
         """Send output Event"""
         # 发送wirefire Event（连线的时候Wire的Output需要注册Input的wirefire事件）
         wirefire_event_type = "wirefire_{}_{}".format(self.component.id, self.name)
-        self.edge.bus.fire(wirefire_event_type, payload)
+        self.edge.bus.fire(wirefire_event_type, event.data)
 
 
 class Input(Interface):
@@ -645,16 +685,18 @@ class Input(Interface):
     def _init_provider(self):
         try:
             self.provider = ServiceProviderFactory.get_provider(self.protocol)
+            # self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         except KeyError:
             # TODO log no such provider key error
             raise
 
     async def conn_input_slot(self, input_wire_params={}):
+        self.edge.add_job(self.provider.async_setup, self.edge, self.attrs)
         await self.provider.conn_input_slot(self, input_wire_params)
 
-    async def emit_data_to_input(self, payload):
+    async def emit_data_to_input(self, event):
         # Emit data to EventBus and invoke configuration service send data function.
-        await self.provider.emit_input_slot(self, payload.data)
+        await self.provider.emit_input_slot(self, event.data)
 
 
 class State(object):
@@ -717,19 +759,24 @@ class Wire(Entity):
         self.input.del_wire(self.id)
         self.output.del_wire(self.id)
 
+
 class WireLoadFactory:
     def __init__(self, config):
         """
         config: user configuration
         """
         self._classes = {}
-        path = os.path.join(dir_path, config['wireload']['path'])
-        self._load(path)
+        paths = config['wireload']['paths']
+        self._load(paths)
 
-    def _load(self, path):
+    def _load(self, paths):
         """Walk throuth path and load WireLoad subclass
         """
-        self._classes = module_util.load_modules(path, WireLoad)
+        classes = {}
+        for path in paths:
+            path = os.path.join(dir_path, path)
+            classes = module_util.load_modules(path, WireLoad)
+            self._classes.update(classes)
         _LOGGER.debug("Load wireloads modules: {}".format(self._classes))
         
     def get_class(self, wireload_name):
@@ -747,6 +794,7 @@ class WireLoad(Component):
         self.input_q = asyncio.Queue(maxsize=3, loop=self.edge.loop)
         self.output_q = asyncio.Queue(maxsize=3, loop=self.edge.loop)
         self.is_stop = False
+        self.emit_output_call = self.emit_output_payload
 
     def before_run_setup(self):
         """Need implemented"""
@@ -758,7 +806,7 @@ class WireLoad(Component):
         
     async def put_output_payload(self, output_name, payload):
         await self.output_q.put((output_name, payload))
-        self.edge.add_job(self.emit_output_payload)
+        self.edge.wireload_emit_output_payload(output_name, self.emit_output_call, payload)
 
     def process(self, input_payload):
         """Need implemented"""
@@ -782,7 +830,10 @@ class WireLoad(Component):
         output_payload = await self.output_q.get()
         try:
             if output_payload:
-                self.outputs[output_payload[0]].output_sink_callback(output_payload[1])
+                
+                # self.outputs[output_payload[0]].output_sink_callback(output_payload[1])
+                event_type = "{}_{}_{}".format("virtual_wire_event", self.id, output_payload[0])
+                self.edge.bus.async_fire(event_type, output_payload[1])
         except KeyError as e:
             _LOGGER.warn("Cannot find output: {}".format(e))
 
@@ -994,7 +1045,7 @@ class EventBus(object):
 
 
 
-def _async_create_timer(edge: MerceEdge) -> None:
+def _async_create_timer(edge) -> None:
     """Create a timer that will start on EVENT_EDGE_START."""
     handle = None
 
@@ -1029,6 +1080,6 @@ def _async_create_timer(edge: MerceEdge) -> None:
             handle.cancel()
 
     edge.bus.async_listen_once(EVENT_EDGE_STOP, stop_timer)
-
+    
     _LOGGER.info("Timer:starting")
     schedule_tick(dt_util.utcnow())

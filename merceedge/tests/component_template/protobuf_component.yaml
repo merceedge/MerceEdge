@@ -1,0 +1,22 @@
+version: '1'
+component:
+  name: protobuf
+  vendor: Merce project group
+  virtual: true
+
+  # parameters:
+  #   return_object: true
+
+  inputs:
+    - name: input
+      protocol:
+        name: virtual
+      type: object
+
+  outputs:
+    - name: output # DO NOT CHANGE OUTPUT NAME!
+      protocol: 
+        name: virtual
+      type: object
+        
+  description: protobuf convert wireload component.
