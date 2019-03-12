@@ -10,8 +10,10 @@ import six
 import time
 # import asyncio
 # import aiohttp
+import tornado
 from pyswagger import App, Security
-from pyswagger.contrib.client.requests import Client
+# from pyswagger.contrib.client.requests import Client
+from pyswagger.contrib.client.tornado import TornadoClient as Client
 
 from swagger_parser import SwaggerParser
 from swagger_tester.swagger_tester import (
@@ -30,7 +32,7 @@ from merceedge.service import (
     ServiceCall
 )
 from os.path import join
-merce_edge_home = os.path.dirname(os.environ['MERCE_EDGE_HOME'])
+merce_edge_home = os.environ['MERCE_EDGE_HOME']
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
@@ -76,10 +78,19 @@ class RestApiProvider(ServiceProvider):
                                                         response_handler)
 
     async def request_timer_handler(self, event):
-        for op, _ in self._requesters.items():
-            response = self.client.request(op).data
-            # input callback
-            self.edge.bus.async_fire(self.event_type, response)
+        for _, ops in self._requesters.items():
+            op = ops[0]
+            try:
+                response = await self.client.request(op)
+                if response is not None:
+                    # input callback
+                    self.edge.bus.async_fire(self.event_type, response)
+                else:
+                    logger.warning("swagger2.0 provider response None!")
+
+            except tornado.httpclient.HTTPClientError:
+                logger.warning("swagger2.0 provider HTTPClientError")
+
 
 
     def _register_webhook_api(self):
@@ -134,7 +145,7 @@ class RestApiProvider(ServiceProvider):
         url = "{}://{}{}".format(schemes[0], host, url)
 
         self.client, app = self._init_swagger_client(interface, swagger_file_fullpath)
-        op = app.op[interface.get_attrs('operationId')](body=body, headers=headers)
+        op = app.op[interface.get_attrs('operationId')](**request_args)
         return op
 
 

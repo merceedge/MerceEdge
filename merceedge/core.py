@@ -1045,7 +1045,7 @@ class EventBus(object):
 
 
 
-def _async_create_timer(edge: MerceEdge) -> None:
+def _async_create_timer(edge) -> None:
     """Create a timer that will start on EVENT_EDGE_START."""
     handle = None
 
