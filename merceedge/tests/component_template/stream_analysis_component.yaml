@@ -1,0 +1,27 @@
+version: '1'
+component:
+  name: stream_analysis_wireload
+  vendor: MerceEdge project group
+  description: Stream analysis wireload component.
+  virtual: true
+  
+  parameters:
+    analysis_array_len: 
+      type: int
+      default: 30
+    threshold:
+      type: float
+      default: 70.0
+
+  inputs:
+    - name: temperature
+      protocol:
+        name: virtual
+      type: float
+
+  outputs: 
+    - name: alert
+      protocol:
+        name: virtual
+      type: boolean  
+
