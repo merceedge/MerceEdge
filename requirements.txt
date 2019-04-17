@@ -15,6 +15,8 @@ protobuf
 # swagger
 pyswagger
 requests~=2.11
+swagger-tester
+swagger-parser
 
 #rtmp
 opencv-python

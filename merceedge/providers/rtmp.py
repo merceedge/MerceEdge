@@ -39,19 +39,26 @@ class RTMPProvider(ServiceProvider):
             TODO user params
         """
         stream = cv2.VideoCapture(rtmp_url)
+        resize_height = params.get('resize_height', 0)
+        resize_width = params.get('resize_width', 0)
         while True:
             
             if self.abort_immediately:
                 print('rtmp provider thread exit')
                 return
             grabbed, frame = stream.read()
+
+            # quality = 20 # quality 0 to 100. default:95
+            # ret, jpeg = cv2.imencode('.jpg', frame, [int(cv2.IMWRITE_JPEG_QUALITY), quality])
+
             # if the frame was not grabbed, then we have reached the end
             # of the stream
             if not grabbed:
                 break
-            
+            if resize_height != 0 and resize_width != 0:
+                frame = cv2.resize(frame,(1600,900),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
+
             time.sleep(0.08)
-            # callback(frame)
             self.edge.bus.async_fire("{}_{}".format(self.RTMP_FRAME_EVENT, self.output.id), frame)
             
 
