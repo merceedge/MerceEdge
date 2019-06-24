@@ -151,7 +151,7 @@ class MqttServiceProvider(ServiceProvider):
             return
 
         # async with self._paho_lock:
-        _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
+        # _LOGGER.debug("Transmitting message on %s: %s", msg_topic, payload)
         await self.edge.async_add_job(
             self._mqttc.publish, msg_topic, payload, qos, retain)
         

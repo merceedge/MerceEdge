@@ -56,7 +56,7 @@ class RTMPProvider(ServiceProvider):
             if not grabbed:
                 break
             if resize_height != 0 and resize_width != 0:
-                frame = cv2.resize(frame,(1600,900),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
+                frame = cv2.resize(frame,(resize_width, resize_height),fx=0,fy=0, interpolation = cv2.INTER_CUBIC)
 
             time.sleep(0.08)
             self.edge.bus.async_fire("{}_{}".format(self.RTMP_FRAME_EVENT, self.output.id), frame)

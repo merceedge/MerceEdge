@@ -15,6 +15,8 @@ components:
     
   - template: object_detector_ui
     id: object_detector_ui_test
+    # TODO
+    # digital_shadow_provider: aws
 
 wires:
   - output_sink: 
@@ -24,6 +26,8 @@ wires:
         # rtmp_url: "rtmp://change_your_rtmp_path_here"
         # rtmp_url: "/local_path/test_video.mp4"
         rtmp_url: "/home/MerceEdge/SampleVideo_720x480_30mb.mp4"
+        resize_height: 450
+        resize_width: 800
     input_slot:
       component_id: object_detection_test
       input: rtmp

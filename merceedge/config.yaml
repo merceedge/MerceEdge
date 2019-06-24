@@ -7,7 +7,7 @@ formula:
   paths:
   - tests/formula
 mqtt:
-  broker: mosquitto
+  broker: 127.0.0.1
   keepalive: 60
   port: 1883
   protocol: 3.1.1

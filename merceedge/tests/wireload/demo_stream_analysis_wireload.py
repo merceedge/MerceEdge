@@ -19,7 +19,7 @@ class StreamAnaylsisWireLoad(WireLoad):
     def before_run_setup(self):
         self.data = deque(maxlen=self.analysis_array_len)
     
-    def process(self, input_data):
+    async def process(self, input_data):
         self.data.append(input_data)
         mean_value = np.mean(list(self.data))
         if mean_value > self.threshold:
